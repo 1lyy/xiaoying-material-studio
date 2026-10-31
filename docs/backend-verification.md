@@ -78,3 +78,11 @@ docker compose --profile test run --build --rm backend-test
 用户截图显示新版 `backend-test` 尚在后端镜像的 `RUN mvn -B -ntp -DskipTests package`：Spring Boot Maven Plugin 3.5.16 的传递依赖 `jna:5.17.0` 与 `httpcore5-h2:5.3.6` 下载时出现 `Premature end of Content-Length delimited message body`，Dockerfile 第 6 行退出 1。**这次没有进入 `mvn verify`，不能视为最新源码的测试失败或通过。**
 
 已在 `backend/Dockerfile` 的构建步骤加入 BuildKit Maven 仓库缓存、Maven Resolver HTTP 重试次数 8 和 `-U`。构建成功后把已解析的依赖复制到测试镜像的 `/opt/maven-repository`，测试容器的 `MAVEN_OPTS` 使用该目录，避免 `verify` 再从零下载；运行镜像仍只复制 JAR。Compose 通过 `MAVEN_MIRROR=central|aliyun` 提供可选下载源，默认 Central；当前 Ubuntu 共享目录的本地 `.env` 设为 `aliyun`。缓存和镜像只改善下载，不跳过 Maven 校验或测试。该修订尚未在 Ubuntu 容器复测；下一步仍运行 `docker compose --profile test run --build --rm backend-test`，以新日志和 Surefire 报告判定结果。
+
+## 2026-10-31 · 最新 MySQL 8.4 verify：31 项中 1 失败
+
+用户重跑同一 `backend-test` 命令；后端测试镜像构建成功，`db-test` 健康，`verify-and-export.sh` 导出日志和 Surefire 报告，退出码 1。真实汇总为 **31 tests、1 failure、0 errors、0 skipped**；`TaskMySqlTest` 11 项中 1 项失败，其他测试类无失败。
+
+失败位置是 `TaskMySqlTest.realMySqlConstraintsRejectInvalidStateAndDuplicatePosition:338`。测试原先要求 `DataIntegrityViolationException`，但 MySQL 8.4 的 `chk_tasks_status` CHECK 已正确拒绝 `status='INVALID'`，驱动返回 SQL 错误码 **3819**、SQLState `HY000`；Spring `JdbcTemplate` 将其包装为 `UncategorizedSQLException`。这是断言绑定异常包装类型过窄，**不是数据库放过非法状态**。原测试在此断言停止，因此后面的重复位置断言尚未在这次运行中执行。
+
+已把 CHECK 断言改为接受 `DataAccessException`，再检查最底层 `SQLException` 的错误码 3819 和约束名 `chk_tasks_status`；重复位置断言也改为检查 MySQL 重复键错误码 1062。仍验证数据库实际拒绝两类非法写入，没有删除用例或弱化为“任意异常即可”。该修订**尚未在容器复跑**；需重新执行同一命令确认全部 31 项和 Maven build 通过。

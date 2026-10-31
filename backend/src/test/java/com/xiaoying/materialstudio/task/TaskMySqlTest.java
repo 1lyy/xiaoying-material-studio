@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.sql.SQLException;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -51,7 +52,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -335,10 +336,16 @@ class TaskMySqlTest {
         var login = login("alice");
         String input = upload(login.token());
         String id = submit(login.token(), input, null).get("id").asText();
-        assertThrows(DataIntegrityViolationException.class,
+        DataAccessException checkFailure = assertThrows(DataAccessException.class,
                 () -> jdbc.update("UPDATE tasks SET status='INVALID' WHERE id=?", id));
-        assertThrows(DataIntegrityViolationException.class,
+        assertTrue(checkFailure.getMostSpecificCause() instanceof SQLException);
+        SQLException sqlFailure = (SQLException) checkFailure.getMostSpecificCause();
+        assertEquals(3819, sqlFailure.getErrorCode());
+        assertTrue(sqlFailure.getMessage().contains("chk_tasks_status"));
+        DataAccessException duplicateFailure = assertThrows(DataAccessException.class,
                 () -> tasks.insertAsset(id, input, 0));
+        assertTrue(duplicateFailure.getMostSpecificCause() instanceof SQLException);
+        assertEquals(1062, ((SQLException) duplicateFailure.getMostSpecificCause()).getErrorCode());
         assertEquals("QUEUED", tasks.findById(id).status());
         assertEquals(List.of(input), tasks.assetIds(id));
     }

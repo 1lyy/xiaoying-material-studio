@@ -1,6 +1,6 @@
 # 素材制作站
 
-小影科技全栈开发笔试题的单仓库项目：Next.js 展示模板、上传和历史；Java 受理任务并在后台按三个阶段处理；MySQL 保存身份、素材和任务记录。2026-10-31 已在 Ubuntu 虚拟机启动 Compose，并从 Windows 浏览器实际完成 Alice 登录、单图上传、任务成功、结果预览、刷新恢复及 Bob 页面隔离。三种指定失败、最新后端 Maven verify、数据卷重启保留和 GitHub Actions 仍待验证。接口与状态以 [API 契约](docs/api-contract.md) 为准。
+小影科技全栈开发笔试题的单仓库项目：Next.js 展示模板、上传和历史；Java 受理任务并在后台按三个阶段处理；MySQL 保存身份、素材和任务记录。2026-10-31 已在 Ubuntu 虚拟机启动 Compose，并从 Windows 浏览器实际完成 Alice 登录、单图上传、任务成功、结果预览、刷新恢复及 Bob 页面隔离。后端最新版 Maven verify 实测 31 项中 1 项失败，测试断言已修订但尚未复跑；三种指定失败的 HTTP 演示、数据卷重启保留和 GitHub Actions 仍待验证。接口与状态以 [API 契约](docs/api-contract.md) 为准。
 
 ## 运行截图
 
@@ -54,7 +54,7 @@ docker compose ps
 docker compose --profile smoke run --rm smoke
 ```
 
-推送或 PR 触发的 [GitHub Actions](.github/workflows/ci.yml) 配置了前端 lint/类型检查/Vitest/build、连接 MySQL 8.4 的 Maven verify、完整 Compose 启动、HTTP 冒烟及正常 down/up 的卷保留检查。可复现命令和结果见[容器验收记录](docs/container-acceptance.md)。Ubuntu 虚拟机中的前端检查已完成 lint/typecheck、Vitest 35/35 与 build；第二次后端 verify 实测 31 项中 12 failures、1 error。修订 MyBatis 映射后，后端镜像曾因 Maven Wrapper 下载失败，改用固定 Maven 构建镜像；新版应用已启动并通过下述手工主流程，但修订版 Maven verify 和 CI 仍无通过记录。
+推送或 PR 触发的 [GitHub Actions](.github/workflows/ci.yml) 配置了前端 lint/类型检查/Vitest/build、连接 MySQL 8.4 的 Maven verify、完整 Compose 启动、HTTP 冒烟及正常 down/up 的卷保留检查。可复现命令和结果见[容器验收记录](docs/container-acceptance.md)。Ubuntu 虚拟机中的前端检查已完成 lint/typecheck、Vitest 35/35 与 build；后端镜像最新已构建并运行真实 MySQL verify，结果为 **31 项中 1 failure、0 errors、0 skipped**。该失败是测试只接受 `DataIntegrityViolationException`，而 MySQL CHECK 约束错误被 Spring 包装为 `UncategorizedSQLException`；测试已改为直接核对 MySQL 错误码与约束名，尚未复跑。新版应用已通过下述手工主流程，CI 仍无核实通过记录。
 
 默认本机访问 `http://127.0.0.1:3000`。本次 Ubuntu 虚拟机将 `WEB_BIND_ADDRESS` 设为虚拟机 host-only IP `192.168.56.101`，Windows 浏览器实际访问 `http://192.168.56.101:3000`；VM 地址变化时需同步改 `.env` 的 `WEB_BIND_ADDRESS` 与 `APP_ALLOWED_ORIGINS`。Compose 只把前端 3000 映射到宿主，Java 8080 与 MySQL 3306 留在内部网络。浏览器只请求同源 `/api/**`；Next.js 服务端以**运行时** `JAVA_API_ORIGIN=http://backend:8080` 代理 Java，Java 连接 `db:3306`。代理保留方法、multipart/图片流、Cookie、`Set-Cookie`、`Location`、`Content-Type`、上游状态与取消信号，不缓存私有响应。上游地址不取自客户端。
 
@@ -72,9 +72,9 @@ docker compose --profile smoke run --rm smoke
 | `APP_ALLOWED_ORIGINS` | `http://127.0.0.1:3000,http://localhost:3000` | Java 对非 GET/HEAD/OPTIONS 请求检查的精确 Origin 白名单 |
 | `MAVEN_MIRROR` | `central` | 后端镜像构建时的 Maven 下载源；可设为 `aliyun` 使用阿里云 Central 镜像，仅影响构建/测试镜像 |
 
-容器环境中的项目检查命令：前端执行 `docker compose --profile test run --build --rm --no-deps frontend-test`（依次 lint、typecheck、Vitest、build）；后端执行 `docker compose --profile test run --build --rm backend-test`（Maven verify，连接隔离的 MySQL 8.4）。第三次 Ubuntu 容器前端检查已完成全部步骤；第二次后端 verify 运行 31 项，其中 12 failures、1 error，尚未通过。此后新构建先遇 Maven Wrapper 发行版下载失败，改用固定 Maven 3.9.11 构建镜像；最近一次又因 Maven Central 的两个 JAR 下载截断而失败，均未进入最新 `verify`。后端测试入口把完整日志和 Surefire 报告写入被忽略的 `backend-test-output/`，以便定位；见 [前端验证记录](docs/frontend-verification.md)和[后端验证记录](docs/backend-verification.md)。
+容器环境中的项目检查命令：前端执行 `docker compose --profile test run --build --rm --no-deps frontend-test`（依次 lint、typecheck、Vitest、build）；后端执行 `docker compose --profile test run --build --rm backend-test`（Maven verify，连接隔离的 MySQL 8.4）。第三次 Ubuntu 容器前端检查已完成全部步骤；最新后端 verify 运行 31 项，其中 1 failure、0 errors，**尚未通过**。先前的 Maven Wrapper 和 Maven Central 下载问题已被绕过，当前测试镜像能够构建并进入真实 MySQL 测试。后端测试入口把完整日志和 Surefire 报告写入被忽略的 `backend-test-output/`，以便定位；见 [前端验证记录](docs/frontend-verification.md)和[后端验证记录](docs/backend-verification.md)。
 
-后端 Dockerfile 现使用 BuildKit Maven 仓库缓存、Resolver HTTP 重试和 `-U`，并将成功构建时的依赖带入测试镜像。默认仍从 Maven Central 下载；在网络持续截断的环境，可在本地 `.env` 设 `MAVEN_MIRROR=aliyun` 后执行同一构建命令，镜像地址为 `https://maven.aliyun.com/repository/central`。该修订**尚未运行验证**，不会跳过失败测试。
+后端 Dockerfile 使用 BuildKit Maven 仓库缓存、Resolver HTTP 重试和 `-U`，并将成功构建时的依赖带入测试镜像。默认仍从 Maven Central 下载；在网络持续截断的环境，可在本地 `.env` 设 `MAVEN_MIRROR=aliyun` 后执行同一构建命令，镜像地址为 `https://maven.aliyun.com/repository/central`。Ubuntu 已用这份本地配置构建测试镜像并执行 `verify`；测试仍有上述 1 项失败，不得称为通过。
 
 ## API 契约与会话
 
@@ -169,12 +169,12 @@ Remove-Item Env:SMOKE_MODE
 
 ## CI、测试与真实验证状态
 
-[GitHub Actions](.github/workflows/ci.yml) 已配置在 push / pull_request 触发，依次运行 `docker compose --profile test --profile smoke config --quiet`、容器内前端 `npm ci` → `npm run lint` → `npm run typecheck`（`tsc --noEmit`）→ `npm run test`（Vitest）→ `npm run build`、连接独立 MySQL 8.4.11 的后端 `mvn -B -ntp verify`、运行镜像构建、完整 Compose 启动、容器 HTTP 冒烟及正常 down/up 的数据保留检查。没有 `continue-on-error`。后端生产镜像的构建阶段只用 `-DskipTests package` 产出 JAR；测试门槛是独立 `verify`，不能把镜像打包当成测试通过。MySQL 集成测试依赖 `TEST_DB_URL`；未设置时带环境条件的测试会跳过。
+[GitHub Actions](.github/workflows/ci.yml) 已配置在 push / pull_request 触发，依次运行 `docker compose --profile test --profile smoke config --quiet`、容器内前端 `npm ci` → `npm run lint` → `npm run typecheck`（`tsc --noEmit`）→ `npm run test`（Vitest）→ `npm run build`、连接独立 MySQL 8.4.11 的后端 `mvn -B -ntp -U verify`、运行镜像构建、完整 Compose 启动、容器 HTTP 冒烟及正常 down/up 的数据保留检查。没有 `continue-on-error`。后端生产镜像的构建阶段只用 `-DskipTests package` 产出 JAR；测试门槛是独立 `verify`，不能把镜像打包当成测试通过。MySQL 集成测试依赖 `TEST_DB_URL`；未设置时带环境条件的测试会跳过。
 
 | 验证类型 | 已有测试/入口 | 本项目的实际结果 |
 | --- | --- | --- |
-| 后端单元与 MVC | `TaskPipelineTest`、`TaskWorkerTest`、`PrivateImageStorageTest`、会话/健康/Origin 测试 | 第二次 Ubuntu Maven verify：31 项中 12 failures、1 error；MyBatis 数值类型别名已再修正，**最新 Maven verify 未运行**。新版运行镜像已构建并启动，这不能代替测试通过 |
-| MyBatis + Flyway + MySQL 8.4 | `TaskMySqlTest`、`AssetMySqlTest`、`IdentityTemplateMySqlTest`，由 `backend-test` 提供 `TEST_DB_URL` | 第二次 verify 的 Surefire 报告已导出；`IdentityTemplateMySqlTest` 3/3 通过，另两个类因 `AssetRow` 映射失败。映射修订后未重跑，完整集成门槛 **UNVERIFIED** |
+| 后端单元与 MVC | `TaskPipelineTest`、`TaskWorkerTest`、`PrivateImageStorageTest`、会话/健康/Origin 测试 | 最新 Ubuntu Maven verify 已运行：全套 31 项中 1 failure、0 errors、0 skipped；失败仅在下面的 MySQL 约束测试。测试断言修订后尚未复跑，整体门槛仍 **FAIL** |
+| MyBatis + Flyway + MySQL 8.4 | `TaskMySqlTest`、`AssetMySqlTest`、`IdentityTemplateMySqlTest`，由 `backend-test` 提供 `TEST_DB_URL` | 真实 MySQL 8.4 测试已运行，`TaskMySqlTest` 11 项中 1 项失败；数据库正确拒绝无效状态，但测试对 Spring 异常子类预期过窄。测试已改为核对 MySQL 错误码 3819/约束名及重复键错误码 1062，**修订版未复跑** |
 | 前端行为与代理 | Vitest/React Testing Library：多任务、旧 version、500/503 与业务失败、轮询启停、上传替换/取消、用户隔离、键盘入口、multipart/图片代理 | Ubuntu 容器 lint/typecheck 完成，Vitest **35 passed / 35**，Next.js build 完成；本次浏览器与 Java 主流程联调成功，异常分支未手工演示 |
 | HTTP/数据卷 | `smoke` 容器脚本：成功、三种指定失败、多任务、Bob 404、正常 down/up 后历史与文件 | 浏览器已实际演示 Alice 单任务成功、结果预览、刷新恢复、Bob 空历史和私有结果拒绝；自动脚本、三种失败及卷保留 **UNVERIFIED** |
 | 静态检查 | YAML 读取、MyBatis XML 解析/方法名对应、两张演示图 Pillow 解码 | 相关检查已执行；这不能替代 Compose、Java、MySQL 或浏览器运行 |

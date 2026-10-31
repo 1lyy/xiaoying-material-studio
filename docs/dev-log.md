@@ -166,3 +166,9 @@
 - 用户新截图显示 `backend-test` 的镜像构建在下载 `jna:5.17.0` 和 `httpcore5-h2:5.3.6` 时因响应体短于 `Content-Length` 失败；未进入 Maven verify，旧 Surefire 报告不代表当前源码。
 - 后端 Dockerfile 为 Maven 依赖目录加 BuildKit 缓存，并设置 Maven Resolver 下载重试和 `-U`；打包成功后将依赖复制进测试镜像，供 `verify` 使用。新增可选 `MAVEN_MIRROR=aliyun`，仓库默认仍用 Central；本地未交付的 `.env` 将使用阿里云 Central 镜像。没有修改依赖版本、业务逻辑或测试通过标准。
 - Windows 宿主无 Docker CLI；本轮仅能静态检查配置。Ubuntu 容器重跑、构建是否成功、最新 Maven verify 和 MySQL 集成测试结果均待验证。
+
+## 2026-10-31 · MySQL CHECK 异常断言修正
+
+- 用户在 Ubuntu 重跑 `backend-test`：构建成功并进入真实 MySQL 8.4 测试，导出报告为 31 tests / 1 failure / 0 errors / 0 skipped，Maven verify 退出 1。先前 13 项映射相关失败在这次报告中未复现。
+- 唯一失败来自 `TaskMySqlTest`：MySQL CHECK 实际以错误码 3819 拒绝非法状态，Spring 返回 `UncategorizedSQLException`，而测试固定期望 `DataIntegrityViolationException`。调整测试核对底层 SQL 错误码和约束名；重复键断言核对 1062。未改生产代码、Flyway 或业务契约，未删除测试。
+- 修订后尚无 Ubuntu 容器复测；后端门槛仍 FAIL。完整日志保留在被忽略的 `backend-test-output/`，不进入交付包。

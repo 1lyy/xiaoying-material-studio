@@ -85,3 +85,7 @@ Remove-Item Env:SMOKE_MODE
 ### 2026-10-31 · 后端测试镜像下载中断
 
 用户再次执行 `docker compose --profile test run --build --rm backend-test` 的截图显示：后端镜像构建在 `RUN mvn -B -ntp -DskipTests package` 下载 Maven Central 的两个 JAR 时因响应体截断失败，耗时约 904 秒；命令未进入 `verify`。后端 Dockerfile 现加入可跨失败构建保留的 BuildKit Maven 缓存及 Resolver 重试，测试镜像预置构建成功时的仓库依赖；Compose 可选 `MAVEN_MIRROR=aliyun`，本地 `.env` 将使用该镜像，CI/仓库默认 Central。该改动尚未在 Ubuntu 运行，**构建与测试均 UNVERIFIED**；下一次应执行同一条命令，检查其退出码及 `backend-test-output/maven-verify.log` 的新时间戳和 Surefire 汇总。旧报告不能作为本轮结果。
+
+### 2026-10-31 · 最新后端测试容器实测
+
+后续同一命令已在 Ubuntu 完成镜像构建、等待 `db-test` 健康并运行 Maven verify。`backend-test-output/` 新日志显示 **31 tests、1 failure、0 errors、0 skipped，exit code 1**；仅 `TaskMySqlTest.realMySqlConstraintsRejectInvalidStateAndDuplicatePosition` 失败。真实 MySQL 8.4 CHECK 已拒绝非法状态（错误码 3819），失败原因是测试对 Spring 异常包装子类预期过窄。现改为核对底层 SQL 错误码/约束名及重复键错误码 1062；修订版尚未复跑，**后端门槛仍 FAIL**。源码和当前报告的具体诊断见 `backend-verification.md`。

@@ -91,3 +91,7 @@
 ### 2026-10-31 网站主流程手工验收
 
 用户随后报告 Compose 启动成功。Windows 浏览器实际访问 Ubuntu 虚拟机的 `http://192.168.56.101:3000/`，验证三模板与分类筛选、Alice 登录、`coast.png` 上传、提交立即出现任务 ID、历史页三阶段成功、结果图加载为 900×600、刷新恢复、Bob 空历史和 Bob 直接读取 Alice 结果得到 `ASSET_NOT_FOUND` 错误体。截图在 `docs/screenshots/`；这证明主流程运行，不能代替最新 Maven verify、三种失败、多任务、HTTP 404 状态或卷重启检查。前述“未运行网站”文字是历史快照，以本节为最新状态。
+
+### 2026-11-01 补记：最新后端 MySQL 测试
+
+用户最新截图及 `backend-test-output/` 报告显示测试镜像已构建、MySQL 8.4 测试数据库健康，Maven verify 实际运行 31 项，结果 **1 failure、0 errors、0 skipped**。唯一失败是 `TaskMySqlTest.realMySqlConstraintsRejectInvalidStateAndDuplicatePosition` 对 Spring 异常子类的预期过窄；MySQL 已以错误码 3819 拒绝违反 `chk_tasks_status` 的写入。测试现核对底层 SQL 错误码/约束名，并对重复键核对 1062；**修订版未复跑，后端门槛仍 FAIL**。前文 12 failures/1 error、构建下载失败等是历史记录，不代表最新运行结果。自动 HTTP 冒烟、数据卷重启及 CI 仍待核实。
