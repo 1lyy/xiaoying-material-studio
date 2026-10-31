@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaoying.materialstudio.template.TemplateMapper">
+    <resultMap id="templateRow" type="com.xiaoying.materialstudio.template.TemplateRow">
+        <constructor>
+            <idArg column="id" javaType="java.lang.String"/>
+            <arg column="title" javaType="java.lang.String"/>
+            <arg column="category" javaType="java.lang.String"/>
+            <arg column="description" javaType="java.lang.String"/>
+            <arg column="cover_path" javaType="java.lang.String"/>
+            <arg column="required_image_count" javaType="java.lang.Integer"/>
+            <arg column="accepted_mime_types_json" javaType="java.lang.String"/>
+            <arg column="max_file_size_bytes" javaType="java.lang.Long"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="templateColumns">
+        id, title, category, description, cover_path, required_image_count,
+        CAST(accepted_mime_types AS CHAR) AS accepted_mime_types_json, max_file_size_bytes
+    </sql>
+
+    <select id="findAll" resultMap="templateRow">
+        SELECT <include refid="templateColumns"/> FROM templates ORDER BY category, title, id
+    </select>
+
+    <select id="findByCategory" resultMap="templateRow">
+        SELECT <include refid="templateColumns"/> FROM templates
+        WHERE category = #{category} ORDER BY title, id
+    </select>
+
+    <select id="findById" resultMap="templateRow">
+        SELECT <include refid="templateColumns"/> FROM templates WHERE id = #{id}
+    </select>
+</mapper>

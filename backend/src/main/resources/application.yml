@@ -1,0 +1,42 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: material-studio-backend
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/material_studio?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true}
+    username: ${SPRING_DATASOURCE_USERNAME:material_app}
+    password: ${SPRING_DATASOURCE_PASSWORD:local_demo_password}
+  flyway:
+    enabled: true
+  jackson:
+    time-zone: UTC
+    deserialization:
+      fail-on-unknown-properties: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+mybatis:
+  mapper-locations: classpath*:mappers/*.xml
+app:
+  worker:
+    enabled: ${TASK_WORKER_ENABLED:true}
+  simulation:
+    default-stage-delay-ms: ${DEFAULT_STAGE_DELAY_MS:2000}
+  storage:
+    root: ${STORAGE_ROOT:/data/assets}
+  demo-mode: ${DEMO_MODE:true}
+  session:
+    ttl-hours: ${SESSION_TTL_HOURS:24}
+    cookie-secure: ${SESSION_COOKIE_SECURE:false}
+  security:
+    allowed-origins: ${APP_ALLOWED_ORIGINS:http://127.0.0.1:3000,http://localhost:3000}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never

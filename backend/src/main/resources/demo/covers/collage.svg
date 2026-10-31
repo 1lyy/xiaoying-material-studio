@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-labelledby="title">
+  <title id="title">周末拼贴示例封面</title>
+  <rect width="800" height="500" fill="#e9e3d8"/>
+  <g transform="rotate(-7 214 240)"><rect x="74" y="65" width="280" height="340" rx="8" fill="white"/><rect x="92" y="83" width="244" height="245" fill="#8fb8a2"/><circle cx="244" cy="163" r="48" fill="#f8e2a8"/><path d="M92 295 167 204 224 258 278 186 336 271V328H92Z" fill="#577f75"/></g>
+  <g transform="rotate(8 552 233)"><rect x="387" y="61" width="281" height="340" rx="8" fill="white"/><rect x="405" y="79" width="245" height="245" fill="#e0ad87"/><path d="M405 300Q472 218 530 269T650 232V324H405Z" fill="#a56d69"/><circle cx="594" cy="135" r="31" fill="#fff0c8"/></g>
+  <text x="400" y="453" text-anchor="middle" font-size="38" font-family="sans-serif" font-weight="700" fill="#3d5553">WEEKEND NOTES</text>
+</svg>

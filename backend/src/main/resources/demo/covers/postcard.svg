@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-labelledby="title">
+  <title id="title">山海明信片示例封面</title>
+  <defs>
+    <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#7ec8d8"/><stop offset="1" stop-color="#d5edf0"/></linearGradient>
+    <linearGradient id="sea" x2="0" y2="1"><stop stop-color="#337ba1"/><stop offset="1" stop-color="#184a71"/></linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="#f6eddd"/>
+  <rect x="38" y="35" width="724" height="430" rx="20" fill="white"/>
+  <rect x="62" y="58" width="676" height="310" rx="10" fill="url(#sky)"/>
+  <path d="M62 274 202 171 323 259 447 140 636 281 738 233V368H62Z" fill="#497d7d"/>
+  <path d="M62 307Q182 277 302 313T542 301T738 315V368H62Z" fill="url(#sea)"/>
+  <circle cx="624" cy="126" r="44" fill="#fff3cc"/>
+  <text x="82" y="423" font-size="34" font-family="sans-serif" font-weight="700" fill="#28536a">Greetings from the coast</text>
+  <circle cx="676" cy="414" r="26" fill="none" stroke="#b4cbd0" stroke-width="4"/>
+</svg>

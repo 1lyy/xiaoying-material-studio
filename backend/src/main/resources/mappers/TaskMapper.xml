@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaoying.materialstudio.task.TaskMapper">
+    <resultMap id="taskRow" type="com.xiaoying.materialstudio.task.TaskRow">
+        <constructor>
+            <idArg column="id" javaType="java.lang.String"/>
+            <arg column="user_id" javaType="java.lang.String"/>
+            <arg column="template_id" javaType="java.lang.String"/>
+            <arg column="template_title_snapshot" javaType="java.lang.String"/>
+            <arg column="status" javaType="java.lang.String"/>
+            <arg column="current_stage" javaType="java.lang.String"/>
+            <arg column="simulation_json_text" javaType="java.lang.String"/>
+            <arg column="result_asset_id" javaType="java.lang.String"/>
+            <arg column="failed_stage" javaType="java.lang.String"/>
+            <arg column="error_code" javaType="java.lang.String"/>
+            <arg column="error_message" javaType="java.lang.String"/>
+            <arg column="created_at" javaType="java.time.LocalDateTime"/>
+            <arg column="started_at" javaType="java.time.LocalDateTime"/>
+            <arg column="finished_at" javaType="java.time.LocalDateTime"/>
+            <arg column="version" javaType="_long"/>
+        </constructor>
+    </resultMap>
+    <resultMap id="stepRow" type="com.xiaoying.materialstudio.task.TaskStepRow">
+        <constructor>
+            <idArg column="stage" javaType="java.lang.String"/>
+            <arg column="status" javaType="java.lang.String"/>
+            <arg column="started_at" javaType="java.time.LocalDateTime"/>
+            <arg column="finished_at" javaType="java.time.LocalDateTime"/>
+            <arg column="error_message" javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+    <sql id="taskColumns">id,user_id,template_id,template_title_snapshot,status,current_stage,
+        CAST(simulation_json AS CHAR) AS simulation_json_text,result_asset_id,failed_stage,error_code,
+        error_message,created_at,started_at,finished_at,version</sql>
+    <insert id="insert" parameterType="map">
+        INSERT INTO tasks (id,user_id,template_id,template_title_snapshot,simulation_json,created_at)
+        VALUES (#{id},#{userId},#{templateId},#{templateTitle},CAST(#{simulationJson} AS JSON),#{createdAt})
+    </insert>
+    <insert id="insertAsset">
+        INSERT INTO task_assets (task_id,asset_id,position) VALUES (#{taskId},#{assetId},#{position})
+    </insert>
+    <insert id="insertStep">
+        INSERT INTO task_steps (task_id,stage,stage_order,status)
+        VALUES (#{taskId},#{stage},#{order},'PENDING')
+    </insert>
+    <select id="findOwned" resultMap="taskRow">
+        SELECT <include refid="taskColumns"/> FROM tasks WHERE id=#{id} AND user_id=#{userId}
+    </select>
+    <select id="history" resultMap="taskRow">
+        SELECT <include refid="taskColumns"/> FROM tasks WHERE user_id=#{userId}
+        ORDER BY created_at DESC,id DESC
+    </select>
+    <select id="findById" resultMap="taskRow">
+        SELECT <include refid="taskColumns"/> FROM tasks WHERE id=#{id}
+    </select>
+    <select id="steps" resultMap="stepRow">
+        SELECT stage,status,started_at,finished_at,error_message
+        FROM task_steps WHERE task_id=#{taskId} ORDER BY stage_order
+    </select>
+    <select id="assetIds" resultType="java.lang.String">
+        SELECT asset_id FROM task_assets WHERE task_id=#{taskId} ORDER BY position
+    </select>
+    <select id="queueHead" resultType="java.lang.String">
+        SELECT id FROM tasks WHERE status='QUEUED' ORDER BY created_at,id LIMIT 1
+    </select>
+    <select id="running" resultMap="taskRow">
+        SELECT <include refid="taskColumns"/> FROM tasks WHERE status='RUNNING' ORDER BY created_at,id
+    </select>
+    <update id="claim">
+        UPDATE tasks SET status='RUNNING',started_at=#{now},version=version+1
+        WHERE id=#{id} AND status='QUEUED' AND current_stage IS NULL
+    </update>
+    <update id="startTaskStage">
+        UPDATE tasks SET current_stage=#{stage},version=version+1
+        WHERE id=#{id} AND status='RUNNING'
+        <choose>
+            <when test="previous == null">AND current_stage IS NULL</when>
+            <otherwise>AND current_stage=#{previous}</otherwise>
+        </choose>
+    </update>
+    <update id="startStep">
+        UPDATE task_steps SET status='RUNNING',started_at=#{now}
+        WHERE task_id=#{id} AND stage=#{stage} AND stage_order=#{order} AND status='PENDING'
+    </update>
+    <update id="completeStep">
+        UPDATE task_steps SET status='SUCCEEDED',finished_at=#{now}
+        WHERE task_id=#{id} AND stage=#{stage} AND status='RUNNING'
+    </update>
+    <update id="bumpAfterStep">
+        UPDATE tasks SET version=version+1 WHERE id=#{id} AND status='RUNNING' AND current_stage=#{stage}
+    </update>
+    <update id="succeed">
+        UPDATE tasks SET status='SUCCEEDED',result_asset_id=#{resultAssetId},finished_at=#{now},version=version+1
+        WHERE id=#{id} AND status='RUNNING' AND current_stage='FINALIZE' AND result_asset_id IS NULL
+    </update>
+    <update id="failStep">
+        UPDATE task_steps SET status='FAILED',finished_at=#{now},error_message=#{message}
+        WHERE task_id=#{id} AND stage=#{stage} AND status='RUNNING'
+    </update>
+    <update id="skipLater">
+        UPDATE task_steps SET status='SKIPPED' WHERE task_id=#{id} AND stage_order &gt; #{order} AND status='PENDING'
+    </update>
+    <update id="failTask">
+        UPDATE tasks SET status='FAILED',failed_stage=#{stage},error_code=#{code},error_message=#{message},
+                         finished_at=#{now},version=version+1
+        WHERE id=#{id} AND status='RUNNING' AND current_stage=#{stage}
+    </update>
+    <update id="interruptStep">
+        UPDATE task_steps SET status='FAILED',started_at=COALESCE(started_at,#{now}),
+                              finished_at=#{now},error_message=#{message}
+        WHERE task_id=#{id} AND stage=#{stage} AND status IN ('PENDING','RUNNING')
+    </update>
+    <update id="interruptTask">
+        UPDATE tasks SET status='FAILED',current_stage=#{stage},failed_stage=#{stage},
+                         error_code='PROCESS_INTERRUPTED',error_message=#{message},finished_at=#{now},
+                         started_at=COALESCE(started_at,#{now}),version=version+1
+        WHERE id=#{id} AND status='RUNNING'
+    </update>
+</mapper>

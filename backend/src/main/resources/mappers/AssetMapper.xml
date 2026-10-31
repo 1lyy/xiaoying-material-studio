@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaoying.materialstudio.asset.AssetMapper">
+    <resultMap id="assetRow" type="com.xiaoying.materialstudio.asset.AssetRow">
+        <constructor>
+            <idArg column="id" javaType="java.lang.String"/>
+            <arg column="user_id" javaType="java.lang.String"/>
+            <arg column="template_id" javaType="java.lang.String"/>
+            <arg column="purpose" javaType="java.lang.String"/>
+            <arg column="storage_path" javaType="java.lang.String"/>
+            <arg column="mime_type" javaType="java.lang.String"/>
+            <arg column="size_bytes" javaType="_long"/>
+            <arg column="width" javaType="_int"/>
+            <arg column="height" javaType="_int"/>
+            <arg column="created_at" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <insert id="insert">
+        INSERT INTO assets (id, user_id, template_id, purpose, storage_path, mime_type,
+                            size_bytes, width, height, created_at)
+        VALUES (#{id}, #{userId}, #{templateId}, #{purpose}, #{storagePath}, #{mimeType},
+                #{sizeBytes}, #{width}, #{height}, #{createdAt})
+    </insert>
+
+    <select id="findOwned" resultMap="assetRow">
+        SELECT id, user_id, template_id, purpose, storage_path, mime_type,
+               size_bytes, width, height, created_at
+        FROM assets WHERE id = #{id} AND user_id = #{userId}
+    </select>
+</mapper>

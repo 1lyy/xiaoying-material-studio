@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+**/node_modules/
+**/.next/
+**/*.tsbuildinfo
+**/coverage/
+**/dist/
+**/target/
+.npm-cache/
+**/.DS_Store
+*.log
+*.local
+backend/storage/
+backend-test-output/
+.idea/
+.vscode/

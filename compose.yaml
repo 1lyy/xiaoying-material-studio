@@ -1,0 +1,138 @@
+name: xiaoying-material-studio
+
+services:
+  db:
+    image: mysql:8.4.11
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-material_studio}
+      MYSQL_USER: ${MYSQL_USER:-material_app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-local_demo_password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-local_demo_root_password}
+      TZ: UTC
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping --host=127.0.0.1 --user=$$MYSQL_USER --password=\"$$MYSQL_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+    networks: [app]
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE:-material_studio}?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-material_app}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-local_demo_password}
+      STORAGE_ROOT: ${STORAGE_ROOT:-/data/assets}
+      DEMO_MODE: ${DEMO_MODE:-true}
+      TASK_WORKER_ENABLED: ${TASK_WORKER_ENABLED:-true}
+      DEFAULT_STAGE_DELAY_MS: ${DEFAULT_STAGE_DELAY_MS:-2000}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-24}
+      APP_ALLOWED_ORIGINS: ${APP_ALLOWED_ORIGINS:-http://127.0.0.1:3000,http://localhost:3000}
+      TZ: UTC
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - asset-data:${STORAGE_ROOT:-/data/assets}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    networks: [app]
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      JAVA_API_ORIGIN: ${JAVA_API_ORIGIN:-http://backend:8080}
+      TZ: UTC
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+    networks: [app]
+    restart: unless-stopped
+
+  backend-test:
+    profiles: [test]
+    build:
+      context: ./backend
+      target: build
+    working_dir: /workspace
+    environment:
+      TEST_DB_URL: jdbc:mysql://db-test:3306/material_studio_test?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true
+      TEST_DB_USER: ${MYSQL_USER:-material_app}
+      TEST_DB_PASSWORD: ${MYSQL_PASSWORD:-local_demo_password}
+      TASK_WORKER_ENABLED: "false"
+      TZ: UTC
+    depends_on:
+      db-test:
+        condition: service_healthy
+    volumes:
+      - ./backend-test-output:/workspace/test-output
+    command: ["sh", "./verify-and-export.sh"]
+    networks: [app]
+
+  frontend-test:
+    profiles: [test]
+    build:
+      context: ./frontend
+      target: verify
+    networks: [app]
+
+  smoke:
+    profiles: [smoke]
+    image: node:22.23.4-bookworm-slim
+    environment:
+      SMOKE_MODE: ${SMOKE_MODE:-initial}
+    volumes:
+      - ./scripts/container-smoke.mjs:/work/container-smoke.mjs:ro
+      - ./demo-inputs:/samples:ro
+      - smoke-state:/state
+    depends_on:
+      frontend:
+        condition: service_healthy
+    command: ["node", "/work/container-smoke.mjs"]
+    networks: [app]
+
+  db-test:
+    profiles: [test]
+    image: mysql:8.4.11
+    environment:
+      MYSQL_DATABASE: material_studio_test
+      MYSQL_USER: ${MYSQL_USER:-material_app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-local_demo_password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-local_demo_root_password}
+      TZ: UTC
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping --host=127.0.0.1 --user=$$MYSQL_USER --password=\"$$MYSQL_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+    networks: [app]
+
+volumes:
+  mysql-data:
+  asset-data:
+  smoke-state:
+
+networks:
+  app:
+    driver: bridge
