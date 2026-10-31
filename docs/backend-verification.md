@@ -72,3 +72,9 @@ docker compose --profile test run --build --rm backend-test
 用户再次执行同一容器命令，导出报告显示 **31 tests、12 failures、1 error、0 skipped，exit code 1**。会话过期夹具和显式 `simulation:null` 的错误已不再出现；`IdentityTemplateMySqlTest` 3/3 通过。剩余 13 项均在 `AssetMapper.findOwned` 读回 `AssetRow` 时触发同一个 `NoSuchMethodException`，或因其返回 HTTP 500 而失败。
 
 第一次修订使用 `javaType="long"/"int"`，但 [MyBatis 官方内置别名表](https://mybatis.org/mybatis-3/configuration#typeAliases)明确规定 `long`/`int` 对应 `Long`/`Integer`，只有 `_long`/`_int` 对应 Java 基本类型。现已把 `AssetMapper` 的三个数值参数和 `TaskMapper` 的 `version` 改为带下划线的基本类型别名。这次更正**尚未重跑**；后端门槛仍为 **FAIL**。
+
+## 2026-10-31 · Maven Central 下载截断与构建修订
+
+用户截图显示新版 `backend-test` 尚在后端镜像的 `RUN mvn -B -ntp -DskipTests package`：Spring Boot Maven Plugin 3.5.16 的传递依赖 `jna:5.17.0` 与 `httpcore5-h2:5.3.6` 下载时出现 `Premature end of Content-Length delimited message body`，Dockerfile 第 6 行退出 1。**这次没有进入 `mvn verify`，不能视为最新源码的测试失败或通过。**
+
+已在 `backend/Dockerfile` 的构建步骤加入 BuildKit Maven 仓库缓存、Maven Resolver HTTP 重试次数 8 和 `-U`。构建成功后把已解析的依赖复制到测试镜像的 `/opt/maven-repository`，测试容器的 `MAVEN_OPTS` 使用该目录，避免 `verify` 再从零下载；运行镜像仍只复制 JAR。Compose 通过 `MAVEN_MIRROR=central|aliyun` 提供可选下载源，默认 Central；当前 Ubuntu 共享目录的本地 `.env` 设为 `aliyun`。缓存和镜像只改善下载，不跳过 Maven 校验或测试。该修订尚未在 Ubuntu 容器复测；下一步仍运行 `docker compose --profile test run --build --rm backend-test`，以新日志和 Surefire 报告判定结果。

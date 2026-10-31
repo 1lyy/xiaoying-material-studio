@@ -23,6 +23,8 @@ services:
   backend:
     build:
       context: ./backend
+      args:
+        MAVEN_MIRROR: ${MAVEN_MIRROR:-central}
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE:-material_studio}?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-material_app}
@@ -74,6 +76,8 @@ services:
     build:
       context: ./backend
       target: build
+      args:
+        MAVEN_MIRROR: ${MAVEN_MIRROR:-central}
     working_dir: /workspace
     environment:
       TEST_DB_URL: jdbc:mysql://db-test:3306/material_studio_test?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true

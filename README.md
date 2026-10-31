@@ -70,8 +70,11 @@ docker compose --profile smoke run --rm smoke
 | `DEFAULT_STAGE_DELAY_MS` | `2000` | 每阶段默认模拟毫秒数，合法范围 0～30000 |
 | `SESSION_TTL_HOURS`, `SESSION_COOKIE_SECURE` | `24`, `false` | 会话有效期（代码限制 1～168 小时）；HTTPS 时将 Secure 设为 true |
 | `APP_ALLOWED_ORIGINS` | `http://127.0.0.1:3000,http://localhost:3000` | Java 对非 GET/HEAD/OPTIONS 请求检查的精确 Origin 白名单 |
+| `MAVEN_MIRROR` | `central` | 后端镜像构建时的 Maven 下载源；可设为 `aliyun` 使用阿里云 Central 镜像，仅影响构建/测试镜像 |
 
-容器环境中的项目检查命令：前端执行 `docker compose --profile test run --build --rm --no-deps frontend-test`（依次 lint、typecheck、Vitest、build）；后端执行 `docker compose --profile test run --build --rm backend-test`（Maven verify，连接隔离的 MySQL 8.4）。第三次 Ubuntu 容器前端检查已完成全部步骤；第二次后端 verify 运行 31 项，其中 12 failures、1 error，尚未通过。后续新构建因 Maven Wrapper 下载失败而未进入测试。后端测试入口把完整日志和 Surefire 报告写入被忽略的 `backend-test-output/`，以便定位；见 [前端验证记录](docs/frontend-verification.md)和[后端验证记录](docs/backend-verification.md)。
+容器环境中的项目检查命令：前端执行 `docker compose --profile test run --build --rm --no-deps frontend-test`（依次 lint、typecheck、Vitest、build）；后端执行 `docker compose --profile test run --build --rm backend-test`（Maven verify，连接隔离的 MySQL 8.4）。第三次 Ubuntu 容器前端检查已完成全部步骤；第二次后端 verify 运行 31 项，其中 12 failures、1 error，尚未通过。此后新构建先遇 Maven Wrapper 发行版下载失败，改用固定 Maven 3.9.11 构建镜像；最近一次又因 Maven Central 的两个 JAR 下载截断而失败，均未进入最新 `verify`。后端测试入口把完整日志和 Surefire 报告写入被忽略的 `backend-test-output/`，以便定位；见 [前端验证记录](docs/frontend-verification.md)和[后端验证记录](docs/backend-verification.md)。
+
+后端 Dockerfile 现使用 BuildKit Maven 仓库缓存、Resolver HTTP 重试和 `-U`，并将成功构建时的依赖带入测试镜像。默认仍从 Maven Central 下载；在网络持续截断的环境，可在本地 `.env` 设 `MAVEN_MIRROR=aliyun` 后执行同一构建命令，镜像地址为 `https://maven.aliyun.com/repository/central`。该修订**尚未运行验证**，不会跳过失败测试。
 
 ## API 契约与会话
 

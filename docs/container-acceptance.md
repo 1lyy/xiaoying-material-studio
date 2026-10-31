@@ -81,3 +81,7 @@ Remove-Item Env:SMOKE_MODE
 用户报告 Ubuntu 端 `docker compose up --build -d --wait` 已成功；完整终端输出未留存。Windows 浏览器实际从 `http://192.168.56.101:3000/` 打开站点，证明前端端口可达并能通过同源代理读取 Java 模板、会话、上传、任务与结果。浏览器操作与观察：三模板/分类筛选；Alice 登录、单图 `coast.png` 上传就绪；提交后页面显示任务 ID 与等待处理；历史页显示该任务成功及三步骤均完成；结果图完整加载为 900×600；刷新后保留；切换 Bob 后历史为空，直接打开 Alice 结果地址得到 `ASSET_NOT_FOUND` 错误体。整页截图位于 `docs/screenshots/`。此检查不等同于自动 smoke 或 Maven verify。
 
 最新后端 Maven verify、三种指定失败、多任务排队、HTTP 404 状态、干净卷迁移和正常 down/up 后数据保留仍 **UNVERIFIED**。旧报表 `31 / 12 failures / 1 error` 对应前一版 Mapper；不得当作本次运行结果。GitHub Actions 尚无本项目运行记录。
+
+### 2026-10-31 · 后端测试镜像下载中断
+
+用户再次执行 `docker compose --profile test run --build --rm backend-test` 的截图显示：后端镜像构建在 `RUN mvn -B -ntp -DskipTests package` 下载 Maven Central 的两个 JAR 时因响应体截断失败，耗时约 904 秒；命令未进入 `verify`。后端 Dockerfile 现加入可跨失败构建保留的 BuildKit Maven 缓存及 Resolver 重试，测试镜像预置构建成功时的仓库依赖；Compose 可选 `MAVEN_MIRROR=aliyun`，本地 `.env` 将使用该镜像，CI/仓库默认 Central。该改动尚未在 Ubuntu 运行，**构建与测试均 UNVERIFIED**；下一次应执行同一条命令，检查其退出码及 `backend-test-output/maven-verify.log` 的新时间戳和 Surefire 汇总。旧报告不能作为本轮结果。

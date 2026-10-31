@@ -160,3 +160,9 @@
 
 - 用户第二次容器 `verify` 为 31 项中 12 failures、1 error；会话过期和显式模拟 null 的问题已消失，余下仍为 `AssetRow` 构造器类型不匹配。
 - 对照 MyBatis 官方别名文档，确认 XML 中 `long`/`int` 仍解析为包装类；已将 `AssetMapper` 和 `TaskMapper` 的基本数值参数改用 `_long`/`_int`。修订后尚未运行容器测试，不能宣称后端通过。
+
+## 2026-10-31 · 后端依赖下载中断处理
+
+- 用户新截图显示 `backend-test` 的镜像构建在下载 `jna:5.17.0` 和 `httpcore5-h2:5.3.6` 时因响应体短于 `Content-Length` 失败；未进入 Maven verify，旧 Surefire 报告不代表当前源码。
+- 后端 Dockerfile 为 Maven 依赖目录加 BuildKit 缓存，并设置 Maven Resolver 下载重试和 `-U`；打包成功后将依赖复制进测试镜像，供 `verify` 使用。新增可选 `MAVEN_MIRROR=aliyun`，仓库默认仍用 Central；本地未交付的 `.env` 将使用阿里云 Central 镜像。没有修改依赖版本、业务逻辑或测试通过标准。
+- Windows 宿主无 Docker CLI；本轮仅能静态检查配置。Ubuntu 容器重跑、构建是否成功、最新 Maven verify 和 MySQL 集成测试结果均待验证。

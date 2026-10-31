@@ -6,7 +6,7 @@ report_dir=/workspace/test-output
 mkdir -p "$report_dir"
 log_file="$report_dir/maven-verify.log"
 
-mvn -B -ntp verify > "$log_file" 2>&1
+mvn -B -ntp -U verify > "$log_file" 2>&1
 result=$?
 
 if [ -d target/surefire-reports ]; then
