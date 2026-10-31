@@ -176,7 +176,7 @@ Remove-Item Env:SMOKE_MODE
 | HTTP/数据卷 | `smoke` 容器脚本：成功、三种指定失败、多任务、Bob 404、正常 down/up 后历史与文件 | 浏览器已实际演示 Alice 单任务成功、结果预览、刷新恢复、Bob 空历史和私有结果拒绝；自动脚本、三种失败及卷保留 **UNVERIFIED** |
 | 静态检查 | YAML 读取、MyBatis XML 解析/方法名对应、两张演示图 Pillow 解码 | 相关检查已执行；这不能替代 Compose、Java、MySQL 或浏览器运行 |
 
-Windows 宿主没有 Docker CLI，项目安装、构建和运行均在 Ubuntu 虚拟机的容器环境中；Windows 浏览器通过虚拟机 IP 检查页面与 API。当前工作目录在本次发布前没有 `.git` 元数据，本项目 GitHub Actions 尚无运行结果。详细命令与旧失败保留在 [容器验收记录](docs/container-acceptance.md)、[后端记录](docs/backend-verification.md)、[前端记录](docs/frontend-verification.md)与[开发日志](docs/dev-log.md)。外部参考仓库的 CI 结果不属于本项目证据。
+Windows 宿主没有 Docker CLI，项目安装、构建和运行均在 Ubuntu 虚拟机的容器环境中；Windows 浏览器通过虚拟机 IP 检查页面与 API。源码已提交至公开 GitHub 仓库；推送后的 GitHub Actions 结果尚未独立核实，应以仓库的 [Actions 页面](https://github.com/1lyy/xiaoying-material-studio/actions) 为准。详细命令与旧失败保留在 [容器验收记录](docs/container-acceptance.md)、[后端记录](docs/backend-verification.md)、[前端记录](docs/frontend-verification.md)与[开发日志](docs/dev-log.md)。外部参考仓库的 CI 结果不属于本项目证据。
 
 `package-lock.json` 据开发日志由宿主 npm 的 `--package-lock-only --ignore-scripts` 解析依赖元数据产生；未在 Windows 宿主安装项目依赖。Ubuntu 前端容器中 `npm ci`、lint、typecheck、Vitest 与生产构建已实际完成；运行镜像配置的 Node 版本为 22.23.4，未单独采集容器内 `node --version` 输出。
 
