@@ -172,3 +172,8 @@
 - 用户在 Ubuntu 重跑 `backend-test`：构建成功并进入真实 MySQL 8.4 测试，导出报告为 31 tests / 1 failure / 0 errors / 0 skipped，Maven verify 退出 1。先前 13 项映射相关失败在这次报告中未复现。
 - 唯一失败来自 `TaskMySqlTest`：MySQL CHECK 实际以错误码 3819 拒绝非法状态，Spring 返回 `UncategorizedSQLException`，而测试固定期望 `DataIntegrityViolationException`。调整测试核对底层 SQL 错误码和约束名；重复键断言核对 1062。未改生产代码、Flyway 或业务契约，未删除测试。
 - 修订后尚无 Ubuntu 容器复测；后端门槛仍 FAIL。完整日志保留在被忽略的 `backend-test-output/`，不进入交付包。
+
+## 2026-11-01 · 重启后 Mockito agent 初始化失败
+
+- Docker Hub 基础镜像请求连接被拒绝；用户使用已缓存的后端测试镜像挂载当前源码运行 Maven verify。新导出报告为 31 tests、0 failures、24 errors、0 skipped。所有 errors 共享 Mockito inline Byte Buddy mock maker 无法在该容器自附加 agent 的根因；未执行到对应业务断言。
+- 按 Mockito 官方 Java 21+ 指南，在 Maven Surefire 的测试 JVM 启动参数显式加载 `mockito-core` agent，并通过 `maven-dependency-plugin:properties` 获取 JAR 路径。POM 静态 XML 检查完成；容器复测尚未执行，不能称通过。

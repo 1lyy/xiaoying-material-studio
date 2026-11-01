@@ -1,6 +1,6 @@
 # 素材制作站
 
-小影科技全栈开发笔试题的单仓库项目：Next.js 展示模板、上传和历史；Java 受理任务并在后台按三个阶段处理；MySQL 保存身份、素材和任务记录。2026-10-31 已在 Ubuntu 虚拟机启动 Compose，并从 Windows 浏览器实际完成 Alice 登录、单图上传、任务成功、结果预览、刷新恢复及 Bob 页面隔离。后端最新版 Maven verify 实测 31 项中 1 项失败，测试断言已修订但尚未复跑；三种指定失败的 HTTP 演示、数据卷重启保留和 GitHub Actions 仍待验证。接口与状态以 [API 契约](docs/api-contract.md) 为准。
+小影科技全栈开发笔试题的单仓库项目：Next.js 展示模板、上传和历史；Java 受理任务并在后台按三个阶段处理；MySQL 保存身份、素材和任务记录。2026-10-31 已在 Ubuntu 虚拟机启动 Compose，并从 Windows 浏览器实际完成 Alice 登录、单图上传、任务成功、结果预览、刷新恢复及 Bob 页面隔离。后端标准镜像 verify 实测 31 项中 1 项失败，断言已修订；重启后用旧镜像挂载当前源码的复测出现 Mockito agent 初始化错误，POM 已修正但尚未复跑。三种指定失败的 HTTP 演示、数据卷重启保留和 GitHub Actions 仍待验证。接口与状态以 [API 契约](docs/api-contract.md) 为准。
 
 ## 运行截图
 
@@ -54,7 +54,7 @@ docker compose ps
 docker compose --profile smoke run --rm smoke
 ```
 
-推送或 PR 触发的 [GitHub Actions](.github/workflows/ci.yml) 配置了前端 lint/类型检查/Vitest/build、连接 MySQL 8.4 的 Maven verify、完整 Compose 启动、HTTP 冒烟及正常 down/up 的卷保留检查。可复现命令和结果见[容器验收记录](docs/container-acceptance.md)。Ubuntu 虚拟机中的前端检查已完成 lint/typecheck、Vitest 35/35 与 build；后端镜像最新已构建并运行真实 MySQL verify，结果为 **31 项中 1 failure、0 errors、0 skipped**。该失败是测试只接受 `DataIntegrityViolationException`，而 MySQL CHECK 约束错误被 Spring 包装为 `UncategorizedSQLException`；测试已改为直接核对 MySQL 错误码与约束名，尚未复跑。新版应用已通过下述手工主流程，CI 仍无核实通过记录。
+推送或 PR 触发的 [GitHub Actions](.github/workflows/ci.yml) 配置了前端 lint/类型检查/Vitest/build、连接 MySQL 8.4 的 Maven verify、完整 Compose 启动、HTTP 冒烟及正常 down/up 的卷保留检查。可复现命令和结果见[容器验收记录](docs/container-acceptance.md)。Ubuntu 虚拟机中的前端检查已完成 lint/typecheck、Vitest 35/35 与 build；标准后端镜像的上次 verify 为 **31 项中 1 failure、0 errors、0 skipped**，失败是 CHECK 约束测试对 Spring 异常子类预期过窄，断言已修订。重启后 Docker Hub 不可达；使用旧测试镜像挂载当前源码的复测为 **31 项中 24 errors**，均由 Mockito inline agent 自附加失败引起，POM 已按 Java 21 指南配置显式 agent，尚未复跑。新版应用已通过下述手工主流程，CI 仍无核实通过记录。
 
 默认本机访问 `http://127.0.0.1:3000`。本次 Ubuntu 虚拟机将 `WEB_BIND_ADDRESS` 设为虚拟机 host-only IP `192.168.56.101`，Windows 浏览器实际访问 `http://192.168.56.101:3000`；VM 地址变化时需同步改 `.env` 的 `WEB_BIND_ADDRESS` 与 `APP_ALLOWED_ORIGINS`。Compose 只把前端 3000 映射到宿主，Java 8080 与 MySQL 3306 留在内部网络。浏览器只请求同源 `/api/**`；Next.js 服务端以**运行时** `JAVA_API_ORIGIN=http://backend:8080` 代理 Java，Java 连接 `db:3306`。代理保留方法、multipart/图片流、Cookie、`Set-Cookie`、`Location`、`Content-Type`、上游状态与取消信号，不缓存私有响应。上游地址不取自客户端。
 
@@ -173,8 +173,8 @@ Remove-Item Env:SMOKE_MODE
 
 | 验证类型 | 已有测试/入口 | 本项目的实际结果 |
 | --- | --- | --- |
-| 后端单元与 MVC | `TaskPipelineTest`、`TaskWorkerTest`、`PrivateImageStorageTest`、会话/健康/Origin 测试 | 最新 Ubuntu Maven verify 已运行：全套 31 项中 1 failure、0 errors、0 skipped；失败仅在下面的 MySQL 约束测试。测试断言修订后尚未复跑，整体门槛仍 **FAIL** |
-| MyBatis + Flyway + MySQL 8.4 | `TaskMySqlTest`、`AssetMySqlTest`、`IdentityTemplateMySqlTest`，由 `backend-test` 提供 `TEST_DB_URL` | 真实 MySQL 8.4 测试已运行，`TaskMySqlTest` 11 项中 1 项失败；数据库正确拒绝无效状态，但测试对 Spring 异常子类预期过窄。测试已改为核对 MySQL 错误码 3819/约束名及重复键错误码 1062，**修订版未复跑** |
+| 后端单元与 MVC | `TaskPipelineTest`、`TaskWorkerTest`、`PrivateImageStorageTest`、会话/健康/Origin 测试 | 上次标准镜像 verify 为 31 项中 1 failure；重启后旧镜像挂载当前源码的复测为 31 项中 24 errors，共同根因是 Mockito agent 自附加失败。POM 已改为显式 agent，**修订版未复跑**，整体门槛仍 **FAIL** |
+| MyBatis + Flyway + MySQL 8.4 | `TaskMySqlTest`、`AssetMySqlTest`、`IdentityTemplateMySqlTest`，由 `backend-test` 提供 `TEST_DB_URL` | 标准镜像上次真实运行中 `TaskMySqlTest` 11 项有 1 项失败：MySQL 正确拒绝无效状态，测试断言已改为核对错误码 3819/约束名及重复键 1062。挂载源码复测因 Mockito 初始化在各用例前失败，**尚无修订版业务测试结果** |
 | 前端行为与代理 | Vitest/React Testing Library：多任务、旧 version、500/503 与业务失败、轮询启停、上传替换/取消、用户隔离、键盘入口、multipart/图片代理 | Ubuntu 容器 lint/typecheck 完成，Vitest **35 passed / 35**，Next.js build 完成；本次浏览器与 Java 主流程联调成功，异常分支未手工演示 |
 | HTTP/数据卷 | `smoke` 容器脚本：成功、三种指定失败、多任务、Bob 404、正常 down/up 后历史与文件 | 浏览器已实际演示 Alice 单任务成功、结果预览、刷新恢复、Bob 空历史和私有结果拒绝；自动脚本、三种失败及卷保留 **UNVERIFIED** |
 | 静态检查 | YAML 读取、MyBatis XML 解析/方法名对应、两张演示图 Pillow 解码 | 相关检查已执行；这不能替代 Compose、Java、MySQL 或浏览器运行 |

@@ -86,3 +86,9 @@ docker compose --profile test run --build --rm backend-test
 失败位置是 `TaskMySqlTest.realMySqlConstraintsRejectInvalidStateAndDuplicatePosition:338`。测试原先要求 `DataIntegrityViolationException`，但 MySQL 8.4 的 `chk_tasks_status` CHECK 已正确拒绝 `status='INVALID'`，驱动返回 SQL 错误码 **3819**、SQLState `HY000`；Spring `JdbcTemplate` 将其包装为 `UncategorizedSQLException`。这是断言绑定异常包装类型过窄，**不是数据库放过非法状态**。原测试在此断言停止，因此后面的重复位置断言尚未在这次运行中执行。
 
 已把 CHECK 断言改为接受 `DataAccessException`，再检查最底层 `SQLException` 的错误码 3819 和约束名 `chk_tasks_status`；重复位置断言也改为检查 MySQL 重复键错误码 1062。仍验证数据库实际拒绝两类非法写入，没有删除用例或弱化为“任意异常即可”。该修订**尚未在容器复跑**；需重新执行同一命令确认全部 31 项和 Maven build 通过。
+
+## 2026-11-01 · 重启后旧镜像挂载源码的 Mockito 环境错误
+
+重启后 Docker Hub 对 Maven 基础镜像元数据请求 `connect: connection refused`，`--build` 无法开始。用户改用已有 `backend-test` 镜像、将当前 `backend/` 挂载到 `/workspace` 并保留 MySQL 测试依赖，执行完整 `verify`。新导出的 Surefire 汇总为 **31 tests、0 failures、24 errors、0 skipped，exit 1**。24 个错误均以 `Could not initialize plugin: org.mockito.plugins.MockMaker` 开始；底层是 `Could not initialize inline Byte Buddy mock maker`、`Could not self-attach to current VM using external process`。这些用例在测试方法前的 Mockito 初始化失败，不能当成 24 个业务断言失败，也不能证明上轮 CHECK 断言已通过。
+
+按 [Mockito Java 21+ 官方说明](https://javadoc.io/static/org.mockito/mockito-core/5.21.0/org.mockito/org/mockito/Mockito.html)在 `backend/pom.xml` 配置 `maven-dependency-plugin:properties` 将 `mockito-core` JAR 路径提供给 Surefire，并用 `-javaagent` 在测试 JVM 启动时加载它，避免运行时自附加。未改测试用例、Java 业务或 Flyway。POM XML 静态解析通过；**容器中尚未复跑，后端门槛仍 FAIL**。可在 Docker Hub 不通时沿用已有镜像并挂载当前源码运行；完整命令见本轮沟通，务必不要加 `--build`。

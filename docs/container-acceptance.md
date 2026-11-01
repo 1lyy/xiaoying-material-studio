@@ -89,3 +89,7 @@ Remove-Item Env:SMOKE_MODE
 ### 2026-10-31 · 最新后端测试容器实测
 
 后续同一命令已在 Ubuntu 完成镜像构建、等待 `db-test` 健康并运行 Maven verify。`backend-test-output/` 新日志显示 **31 tests、1 failure、0 errors、0 skipped，exit code 1**；仅 `TaskMySqlTest.realMySqlConstraintsRejectInvalidStateAndDuplicatePosition` 失败。真实 MySQL 8.4 CHECK 已拒绝非法状态（错误码 3819），失败原因是测试对 Spring 异常包装子类预期过窄。现改为核对底层 SQL 错误码/约束名及重复键错误码 1062；修订版尚未复跑，**后端门槛仍 FAIL**。源码和当前报告的具体诊断见 `backend-verification.md`。
+
+### 2026-11-01 · VM 重启后的离线镜像复测
+
+VirtualBox 临时共享在重启后丢失，用户重新挂载项目；Docker Hub 拉取 `maven:3.9.11-eclipse-temurin-21` 及 BuildKit 元数据请求均被拒绝，因此 `--build` 未进入 Maven。用户随后使用本地已有 `backend-test` 镜像、挂载当前源码，在容器中运行完整 `verify`，导出 **31 tests、0 failures、24 errors、0 skipped，exit code 1**。Surefire 报告显示共同根因是 Mockito/Byte Buddy 无法在 Java 21 测试容器自附加 agent。POM 已配置启动时显式 Mockito agent，尚未复跑；这轮不能作为 CHECK 断言或后端业务通过的证据。镜像网络故障和测试 JVM agent 故障分别记录，不删除测试或数据卷。

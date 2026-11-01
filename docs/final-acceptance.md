@@ -95,3 +95,7 @@
 ### 2026-11-01 补记：最新后端 MySQL 测试
 
 用户最新截图及 `backend-test-output/` 报告显示测试镜像已构建、MySQL 8.4 测试数据库健康，Maven verify 实际运行 31 项，结果 **1 failure、0 errors、0 skipped**。唯一失败是 `TaskMySqlTest.realMySqlConstraintsRejectInvalidStateAndDuplicatePosition` 对 Spring 异常子类的预期过窄；MySQL 已以错误码 3819 拒绝违反 `chk_tasks_status` 的写入。测试现核对底层 SQL 错误码/约束名，并对重复键核对 1062；**修订版未复跑，后端门槛仍 FAIL**。前文 12 failures/1 error、构建下载失败等是历史记录，不代表最新运行结果。自动 HTTP 冒烟、数据卷重启及 CI 仍待核实。
+
+### 2026-11-01 补记：重启后的测试容器环境
+
+Docker Hub 镜像元数据请求连接被拒绝，用户改用本地已有测试镜像挂载当前源码。新 Surefire 报告为 **31 tests、0 failures、24 errors、0 skipped**，共同根因是 Mockito inline Byte Buddy mock maker 无法在该 Java 21 容器自附加 agent。POM 已按 Mockito 官方指南为 Surefire 配置显式 `mockito-core` Java agent，**修订版尚未运行**；后端门槛仍 FAIL，不能把 0 failures 误写成通过。详见 `backend-verification.md`。
