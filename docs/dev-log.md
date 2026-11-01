@@ -187,3 +187,8 @@
 
 - 专用 `smoke` 镜像因 Docker Hub 连接被拒而无法拉取。新增 `scripts/offline-smoke.sh` 复用本地前端镜像的 Node，在同一 Compose 网络运行原冒烟脚本。
 - 用户在 Ubuntu 执行 `sh scripts/offline-smoke.sh initial`，实际输出 `PASS initial: seed, cover, upload, 202, two successes, three staged failures, history, Bob 404`。数据卷正常 down/up 后的 `persist` 模式仍待运行，不能据此宣称卷保留通过。
+
+## 2026-11-01 · 正常重启后的卷保留检查通过
+
+- 用户执行 `docker compose down`、`docker compose up -d --wait` 后，三应用服务均 Healthy；`sh scripts/offline-smoke.sh persist` 实际输出 `PASS persistence: task history, uploaded file, result file retained after compose down/up; Bob remains isolated`。正常停止重启后的数据库历史、上传和结果文件以及 Bob 隔离均已通过 HTTP 验证。
+- `down` 提示 Compose 网络仍在使用，但不影响本轮结论；干净镜像重建、干净数据卷迁移及 GitHub Actions 仍待验证。

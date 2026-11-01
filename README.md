@@ -1,6 +1,6 @@
 # 素材制作站
 
-小影科技全栈开发笔试题的单仓库项目：Next.js 展示模板、上传和历史；Java 受理任务并在后台按三个阶段处理；MySQL 保存身份、素材和任务记录。2026-10-31 已在 Ubuntu 虚拟机启动 Compose，并从 Windows 浏览器实际完成 Alice 登录、单图上传、任务成功、结果预览、刷新恢复及 Bob 页面隔离。2026-11-01 后端 Maven verify 在容器内挂载当前源码运行，**31 项全部通过**，包括真实 MySQL 8.4 集成测试；离线 HTTP 冒烟 `initial` 模式也已通过，覆盖两个成功任务、三个指定阶段失败和 Bob 404。重新构建镜像仍受 Docker Hub 网络阻塞；数据卷重启保留和 GitHub Actions 仍待验证。接口与状态以 [API 契约](docs/api-contract.md) 为准。
+小影科技全栈开发笔试题的单仓库项目：Next.js 展示模板、上传和历史；Java 受理任务并在后台按三个阶段处理；MySQL 保存身份、素材和任务记录。2026-10-31 已在 Ubuntu 虚拟机启动 Compose，并从 Windows 浏览器实际完成 Alice 登录、单图上传、任务成功、结果预览、刷新恢复及 Bob 页面隔离。2026-11-01 后端 Maven verify 在容器内挂载当前源码运行，**31 项全部通过**，包括真实 MySQL 8.4 集成测试；离线 HTTP 冒烟 `initial` 模式通过，覆盖两个成功任务、三个指定阶段失败和 Bob 404；正常 `down`/`up` 后 `persist` 模式也通过，验证历史及图片保留。重新构建镜像仍受 Docker Hub 网络阻塞；GitHub Actions 仍待验证。接口与状态以 [API 契约](docs/api-contract.md) 为准。
 
 ## 运行截图
 
@@ -112,7 +112,7 @@ docker compose --profile smoke run --rm smoke
 
 空 MySQL 数据库启动时，Spring Boot 自动运行 Flyway：`V1__schema.sql` 创建 `users`、`sessions`、`templates`、`assets`、`tasks`、`task_assets`、`task_steps` 七张业务表及约束/索引；`V2__seed_templates.sql` 写入旅行影像（2 图）、节日创意（1 图）、日常记录（3 图）三个分类；`V3__seed_demo_users.sql` 写入 Alice/Bob。已有数据库由 `flyway_schema_history` 校验已应用版本，**不要修改已应用迁移**。本次运行从 Java 接口实际读到了三模板和 Alice/Bob，并成功写入/读取任务与素材；未独立查询 `flyway_schema_history`，也未实测空卷从零初始化。
 
-三个原创 SVG 封面随 Java JAR 资源打包，由 `/api/templates/{id}/cover` 公开读取。`demo-inputs/coast.png` 与 `sunset.jpg` 是仓库内自绘 640×400 演示上传图；本次已通过页面将 `coast.png` 上传至 Java，取得素材 ID，并生成可加载的 900×600 结果图。Compose 用 `mysql-data` 保存 MySQL 数据，用 `asset-data` 挂载 `STORAGE_ROOT` 保存上传和结果图片，另有仅供冒烟 ID 使用的 `smoke-state` 卷。文件先写 `STORAGE_ROOT/tmp`，验证后移动到 `STORAGE_ROOT/uploads`；数据库仅存相对路径与归属。正常 `docker compose down` 不删除命名卷，`down --volumes` 会删除它们；卷保留行为仍待实测。
+三个原创 SVG 封面随 Java JAR 资源打包，由 `/api/templates/{id}/cover` 公开读取。`demo-inputs/coast.png` 与 `sunset.jpg` 是仓库内自绘 640×400 演示上传图；本次已通过页面将 `coast.png` 上传至 Java，取得素材 ID，并生成可加载的 900×600 结果图。Compose 用 `mysql-data` 保存 MySQL 数据，用 `asset-data` 挂载 `STORAGE_ROOT` 保存上传和结果图片，另有仅供冒烟 ID 使用的 `smoke-state` 卷。文件先写 `STORAGE_ROOT/tmp`，验证后移动到 `STORAGE_ROOT/uploads`；数据库仅存相对路径与归属。正常 `docker compose down` 不删除命名卷，`down --volumes` 会删除它们；正常 down/up 后的卷保留已由 `persist` 冒烟实测通过。
 
 演示用户为 `alice` 和 `bob`。`POST /api/session` 只接收 `demoUserKey`，Java 查询用户并生成 32 字节安全随机令牌；数据库只存 SHA-256 摘要和 UTC 过期时间。业务时钟使用 `Instant`，MyBatis 写入 `DATETIME(6)` 前显式转成 UTC `LocalDateTime`。Cookie 为 `HttpOnly; SameSite=Lax; Path=/`，HTTPS 部署需设置 `SESSION_COOKIE_SECURE=true`。所有 `/api/**` 的 POST/PUT/PATCH/DELETE 必须带与 `APP_ALLOWED_ORIGINS` 完全匹配的 `Origin`；本地默认允许 `127.0.0.1:3000` 与 `localhost:3000`。设 `DEMO_MODE=false` 后，`GET /api/demo-users` 和 `POST /api/session` 均返回 404。**演示身份不等同于正式认证**；上线需另行实现真实身份、会话治理和生产密钥管理。
 
@@ -155,7 +155,7 @@ docker compose --profile smoke run --rm smoke
 
 `smoke` 容器运行 [container-smoke.mjs](scripts/container-smoke.mjs)：它通过同源代理读取模板/封面，分别调用 `POST /api/session` 登录 Alice/Bob 并保存各自 Cookie；用 `demo-inputs/coast.png` 向单图模板 `c2222222-2222-4222-8222-222222222222` 上传并取得服务端 `assetId`；以该 ID 连续提交两个成功任务和 `failAtStage` 分别为三个阶段的任务，逐个检查 `202 + Location`、最终步骤序列、失败原因和授权结果 PNG；最后查询 Alice 全部历史，并断言 Bob 读取 Alice 任务、上传图和结果图均为 404。用户已在 Ubuntu 运行离线入口，终端显示 `PASS initial: seed, cover, upload, 202, two successes, three staged failures, history, Bob 404`。卷重启检查另行验证。
 
-若 Docker Hub 暂时无法拉取专用 `smoke` 镜像，但应用已启动且本地已有 `frontend` 镜像，可在 Ubuntu 项目目录执行 `sh scripts/offline-smoke.sh initial`。它复用前端镜像中的 Node 运行同一冒烟脚本；正常 `docker compose down`、`docker compose up -d --wait` 后执行 `sh scripts/offline-smoke.sh persist` 检查卷保留。`initial` 模式已实测通过，`persist` 模式尚未运行；镜像拉取失败属于网络问题，不是业务断言失败。
+若 Docker Hub 暂时无法拉取专用 `smoke` 镜像，但应用已启动且本地已有 `frontend` 镜像，可在 Ubuntu 项目目录执行 `sh scripts/offline-smoke.sh initial`。它复用前端镜像中的 Node 运行同一冒烟脚本；正常 `docker compose down`、`docker compose up -d --wait` 后执行 `sh scripts/offline-smoke.sh persist` 检查卷保留。两个模式均已在 Ubuntu 实测通过；镜像拉取失败属于网络问题，不是业务断言失败。
 
 验证正常停止后历史和图片仍在（中间的 `down` **不加** `-v`）：
 
@@ -167,7 +167,7 @@ docker compose --profile smoke run --rm smoke
 Remove-Item Env:SMOKE_MODE
 ~~~
 
-第二次脚本重新登录 Alice/Bob 并通过新 HTTP 请求核对成功/失败历史、原上传图和结果图、Bob 404。本次浏览器已验证**成功任务刷新恢复**：Alice 的任务在 `/history` 刷新后仍显示 `SUCCEEDED` 与结果图；切换 Bob 后列表为空，直接打开 Alice 的结果地址得到 `ASSET_NOT_FOUND` 错误体。要观察**处理中刷新恢复**，可在启动前把 `.env` 的 `DEFAULT_STAGE_DELAY_MS` 设为 `5000`，由页面提交新任务后立即刷新 `/history`；该场景尚未实测。前端没有模拟失败控件，三种失败由 API 脚本触发并已在 `initial` 冒烟中通过；卷重启检查仍 **UNVERIFIED**。
+第二次脚本重新登录 Alice/Bob 并通过新 HTTP 请求核对成功/失败历史、原上传图和结果图、Bob 404；Ubuntu 已实际输出 `PASS persistence`。本次浏览器已验证**成功任务刷新恢复**：Alice 的任务在 `/history` 刷新后仍显示 `SUCCEEDED` 与结果图；切换 Bob 后列表为空，直接打开 Alice 的结果地址得到 `ASSET_NOT_FOUND` 错误体。要观察**处理中刷新恢复**，可在启动前把 `.env` 的 `DEFAULT_STAGE_DELAY_MS` 设为 `5000`，由页面提交新任务后立即刷新 `/history`；该场景尚未实测。前端没有模拟失败控件，三种失败由 API 脚本触发并已在 `initial` 冒烟中通过。
 
 ## CI、测试与真实验证状态
 
@@ -178,7 +178,7 @@ Remove-Item Env:SMOKE_MODE
 | 后端单元与 MVC | `TaskPipelineTest`、`TaskWorkerTest`、`PrivateImageStorageTest`、会话/健康/Origin 测试 | 2026-11-01 容器 Maven verify 全套 **31/31 通过**，Mockito agent 显式配置后的相关用例正常执行；无跳过 |
 | MyBatis + Flyway + MySQL 8.4 | `TaskMySqlTest`、`AssetMySqlTest`、`IdentityTemplateMySqlTest`，由 `backend-test` 提供 `TEST_DB_URL` | 同一容器 verify 中真实 MySQL 8.4 集成用例全部通过；包含修订后的 CHECK 错误码 3819/约束名及重复键 1062 断言 |
 | 前端行为与代理 | Vitest/React Testing Library：多任务、旧 version、500/503 与业务失败、轮询启停、上传替换/取消、用户隔离、键盘入口、multipart/图片代理 | Ubuntu 容器 lint/typecheck 完成，Vitest **35 passed / 35**，Next.js build 完成；本次浏览器与 Java 主流程联调成功，异常分支未手工演示 |
-| HTTP/数据卷 | `smoke` 容器脚本：成功、三种指定失败、多任务、Bob 404、正常 down/up 后历史与文件 | 浏览器已演示单任务；Ubuntu 离线入口 `initial` 模式显示 `PASS initial`，覆盖两个成功任务、三种指定失败、多任务及 Bob 404；卷保留 `persist` 模式 **UNVERIFIED** |
+| HTTP/数据卷 | `smoke` 容器脚本：成功、三种指定失败、多任务、Bob 404、正常 down/up 后历史与文件 | Ubuntu 离线入口实际显示 `PASS initial` 和正常 down/up 后的 `PASS persistence`；覆盖两个成功任务、三种指定失败、多任务、Bob 404、历史及上传/结果图片保留 |
 | 静态检查 | YAML 读取、MyBatis XML 解析/方法名对应、两张演示图 Pillow 解码 | 相关检查已执行；这不能替代 Compose、Java、MySQL 或浏览器运行 |
 
 Windows 宿主没有 Docker CLI，项目安装、构建和运行均在 Ubuntu 虚拟机的容器环境中；Windows 浏览器通过虚拟机 IP 检查页面与 API。源码已提交至公开 GitHub 仓库；推送后的 GitHub Actions 结果尚未独立核实，应以仓库的 [Actions 页面](https://github.com/1lyy/xiaoying-material-studio/actions) 为准。详细命令与旧失败保留在 [容器验收记录](docs/container-acceptance.md)、[后端记录](docs/backend-verification.md)、[前端记录](docs/frontend-verification.md)与[开发日志](docs/dev-log.md)。外部参考仓库的 CI 结果不属于本项目证据。
@@ -188,7 +188,7 @@ Windows 宿主没有 Docker CLI，项目安装、构建和运行均在 Ubuntu �
 ## 已有实现、未完成验证与限制
 
 - **源码已具备：**模板/分类、上传与私有读取、演示会话、Java 任务受理与三阶段 Worker、历史查询、Next.js 页面/异步状态、迁移、测试、Dockerfile/Compose/CI。源码存在不等于运行验收通过。
-- **待完成验证：**标准入口从干净镜像重新构建、Flyway 从干净卷初始化、命名卷重启保留、键盘手工检查及 GitHub Actions 实际运行。前端容器检查、后端挂载当前源码的 MySQL 8.4 verify、浏览器单任务主流程及离线 HTTP 冒烟 `initial` 模式已有上述实测。
+- **待完成验证：**标准入口从干净镜像重新构建、Flyway 从干净卷初始化、键盘手工检查及 GitHub Actions 实际运行。前端容器检查、后端挂载当前源码的 MySQL 8.4 verify、浏览器单任务主流程及离线 HTTP 冒烟 `initial`/`persist` 模式已有上述实测。
 - **范围取舍：**无真实 AI、付费/会员、模板管理后台、复杂或第三方登录；身份只供演示。单实例串行 Worker，无消息队列、多实例故障转移、任务受理幂等、断点续跑、失败自动重试或删除上传素材。POST 超时表示受理未知，先查历史再决定是否提交新任务。
 - **数据边界：**启动时遗留 `RUNNING` 变成 `FAILED/PROCESS_INTERRUPTED`，`QUEUED` 保留等待领取；**不是自动续跑**。文件系统与 MySQL 无共同事务，移动文件后崩溃或回滚可能留下孤儿文件，代码仅尽力清理。完整历史查询没有固定条数截断，但缺少分页/归档，数据量大时查询、传输和前端渲染成本会增长；过期会话清理也没有后台维护任务。
 

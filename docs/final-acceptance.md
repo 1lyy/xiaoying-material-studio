@@ -4,6 +4,8 @@
 
 > **HTTP 冒烟增量（2026-11-01）：** Ubuntu 使用 `sh scripts/offline-smoke.sh initial` 复用已有前端镜像运行同一冒烟脚本，终端实际显示 `PASS initial: seed, cover, upload, 202, two successes, three staged failures, history, Bob 404`。下文初审矩阵中的 HTTP 未验证结论已过期；数据卷重启后的 `persist` 模式、干净镜像重建与 GitHub Actions 仍未验证。
 
+> **持久化增量（2026-11-01）：** 正常执行 `docker compose down`、`docker compose up -d --wait` 后，db/backend/frontend 均 Healthy；`sh scripts/offline-smoke.sh persist` 实际显示 `PASS persistence: task history, uploaded file, result file retained after compose down/up; Bob remains isolated`。下文初审矩阵中的卷保留未验证结论已过期。干净镜像重建、干净卷初始化和 GitHub Actions 仍未验证。
+
 初审日期：2026-10-30；增量核查：2026-10-31。依据 `题目原文.md`、`执行计划.md` 及本目录当前源码重新核对。**PASS** 仅指所列证据实际检查通过；**UNVERIFIED** 指当前修订尚未取得必需的运行证据；**FAIL** 指已确认不满足要求。测试文件存在不等于测试通过。Windows 宿主没有 Docker，目录没有 `.git`；用户在 Ubuntu 虚拟机第三次运行前端容器检查，lint/typecheck、Vitest 35/35 和 build 已通过；后端、整站运行与 CI 仍不能标 PASS。
 
 ## R-01～R-14 验收矩阵

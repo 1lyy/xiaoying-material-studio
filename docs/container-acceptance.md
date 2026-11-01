@@ -105,3 +105,7 @@ VirtualBox 临时共享在重启后丢失，用户重新挂载项目；Docker Hu
 ### 2026-11-01 · 离线 HTTP 冒烟 initial 通过
 
 用户在 Ubuntu `/mnt/XiaoYing` 执行 `sh scripts/offline-smoke.sh initial`，截图显示冒烟容器创建并输出 `PASS initial: seed, cover, upload, 202, two successes, three staged failures, history, Bob 404`，命令返回 shell 提示符。脚本的实际断言覆盖模板种子与封面、上传、任务 202、两个成功结果、三个指定阶段失败且后续步骤 SKIPPED、Alice 历史和 Bob 对 Alice 任务/素材/结果的 404。此项 **PASS**；`persist` 模式及正常 down/up 后的数据卷保留仍 **UNVERIFIED**。这次复用了已有前端镜像，未验证干净镜像拉取或重建。
+
+### 2026-11-01 · 正常 down/up 后卷保留通过
+
+用户在 Ubuntu `/mnt/XiaoYing` 顺序执行 `docker compose down`、`docker compose up -d --wait`、`sh scripts/offline-smoke.sh persist`。截图显示 db、backend、frontend 三个服务均 Healthy，随后脚本输出 `PASS persistence: task history, uploaded file, result file retained after compose down/up; Bob remains isolated` 并返回提示符。该脚本重新登录并通过 HTTP 校验先前成功/失败任务历史、上传图、结果图及 Bob 404；正常 down/up 的数据与素材保留 **PASS**。`down` 曾提示网络仍被使用，但没有影响三服务重启和持久化断言；未据此判定是哪一个额外容器占用网络。此次没有使用 `-v`，也不能证明删除卷后的干净迁移或 Docker Hub 干净重建。
