@@ -92,3 +92,9 @@ docker compose --profile test run --build --rm backend-test
 重启后 Docker Hub 对 Maven 基础镜像元数据请求 `connect: connection refused`，`--build` 无法开始。用户改用已有 `backend-test` 镜像、将当前 `backend/` 挂载到 `/workspace` 并保留 MySQL 测试依赖，执行完整 `verify`。新导出的 Surefire 汇总为 **31 tests、0 failures、24 errors、0 skipped，exit 1**。24 个错误均以 `Could not initialize plugin: org.mockito.plugins.MockMaker` 开始；底层是 `Could not initialize inline Byte Buddy mock maker`、`Could not self-attach to current VM using external process`。这些用例在测试方法前的 Mockito 初始化失败，不能当成 24 个业务断言失败，也不能证明上轮 CHECK 断言已通过。
 
 按 [Mockito Java 21+ 官方说明](https://javadoc.io/static/org.mockito/mockito-core/5.21.0/org.mockito/org/mockito/Mockito.html)在 `backend/pom.xml` 配置 `maven-dependency-plugin:properties` 将 `mockito-core` JAR 路径提供给 Surefire，并用 `-javaagent` 在测试 JVM 启动时加载它，避免运行时自附加。未改测试用例、Java 业务或 Flyway。POM XML 静态解析通过；**容器中尚未复跑，后端门槛仍 FAIL**。可在 Docker Hub 不通时沿用已有镜像并挂载当前源码运行；完整命令见本轮沟通，务必不要加 `--build`。
+
+## 2026-11-01 · 当前源码在容器内 verify 通过
+
+用户从 Ubuntu `/mnt/XiaoYing` 用本地已有 `backend-test` 镜像挂载当前 `backend/` 源码，并保留 `db-test` 依赖，执行 `docker compose --profile test run --rm --pull never -v "$PWD/backend:/workspace" -v "$PWD/backend-test-output:/workspace/test-output" backend-test`。终端显示 `Maven verify exit code: 0`；新导出的 `maven-verify.log` 为 **31 tests、0 failures、0 errors、0 skipped，BUILD SUCCESS**，Surefire XML 汇总一致。日志显示 Maven `jar` 与 `spring-boot:repackage` 完成；此前 MyBatis、CHECK 断言与 Mockito 初始化相关失败在这次测试中均未出现。
+
+本次是**当前源码挂载到旧测试镜像**并连接真实 MySQL 8.4 的容器测试通过；不是从空镜像或干净数据卷重新构建的验证。Docker Hub 当前网络连接被拒绝，标准 `--build` 入口、GitHub CI、HTTP 三种失败与数据卷重启保留仍未验证。旧失败章节保留为诊断历史，以本节为最新结果。

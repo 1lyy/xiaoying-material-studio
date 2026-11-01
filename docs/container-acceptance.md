@@ -93,3 +93,7 @@ Remove-Item Env:SMOKE_MODE
 ### 2026-11-01 · VM 重启后的离线镜像复测
 
 VirtualBox 临时共享在重启后丢失，用户重新挂载项目；Docker Hub 拉取 `maven:3.9.11-eclipse-temurin-21` 及 BuildKit 元数据请求均被拒绝，因此 `--build` 未进入 Maven。用户随后使用本地已有 `backend-test` 镜像、挂载当前源码，在容器中运行完整 `verify`，导出 **31 tests、0 failures、24 errors、0 skipped，exit code 1**。Surefire 报告显示共同根因是 Mockito/Byte Buddy 无法在 Java 21 测试容器自附加 agent。POM 已配置启动时显式 Mockito agent，尚未复跑；这轮不能作为 CHECK 断言或后端业务通过的证据。镜像网络故障和测试 JVM agent 故障分别记录，不删除测试或数据卷。
+
+### 2026-11-01 · 挂载当前源码的后端 verify 成功
+
+同一离线镜像挂载方式复跑后，终端显示 `Maven verify exit code: 0`；共享目录中新 `backend-test-output/maven-verify.log` 与 Surefire XML 均显示 **31 tests、0 failures、0 errors、0 skipped，BUILD SUCCESS**，JAR 打包及 Spring Boot repackage 完成。`db-test` 实际运行并达到 healthy，MySQL 8.4 集成用例未跳过。此项为**当前源码在已有容器镜像中的测试通过**；不代表 Docker Hub 恢复、标准 `--build` 从干净环境通过、HTTP 冒烟或卷保留通过。

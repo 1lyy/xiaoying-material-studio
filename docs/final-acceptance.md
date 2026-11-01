@@ -1,5 +1,7 @@
 # 独立最终验收记录
 
+> **最新增量（2026-11-01）：** Ubuntu 容器使用已有 `backend-test` 镜像挂载当前 `backend/` 源码，连接健康的 MySQL 8.4 `db-test` 执行 `mvn verify`。导出日志和 11 份 Surefire XML 均为 **31 tests、0 failures、0 errors、0 skipped，BUILD SUCCESS**，并完成 JAR 打包。下文初审矩阵及旧失败记录保留历史时间点，不能作为当前后端测试结论。标准 `--build` 干净重建、GitHub Actions、自动 HTTP 冒烟和卷保留仍未验证。
+
 初审日期：2026-10-30；增量核查：2026-10-31。依据 `题目原文.md`、`执行计划.md` 及本目录当前源码重新核对。**PASS** 仅指所列证据实际检查通过；**UNVERIFIED** 指当前修订尚未取得必需的运行证据；**FAIL** 指已确认不满足要求。测试文件存在不等于测试通过。Windows 宿主没有 Docker，目录没有 `.git`；用户在 Ubuntu 虚拟机第三次运行前端容器检查，lint/typecheck、Vitest 35/35 和 build 已通过；后端、整站运行与 CI 仍不能标 PASS。
 
 ## R-01～R-14 验收矩阵

@@ -6,7 +6,7 @@
 
 - 按 P0→P4 推进，优先满足 R-01～R-14。不要为了展示复杂度引入真实 AI、支付、消息队列、Redis、第三方登录、模板管理后台等题外业务。
 - 三个已审计的公开笔试仓库均未见明确业务源码复用许可。默认独立实现；可参考通用设计思路，不复制其源码、素材、截图或文案。任何后续复用须先核实许可，并在 README 记录来源、固定 commit 与复用范围。
-- 当前已有七表迁移、演示身份、只读模板、私有素材及 Java 任务 Worker/查询源码；前端已有模板列表、详情、演示用户切换、上传、任务受理缓存和历史查询页面源码。Ubuntu 虚拟机第三次 `frontend-test` 已完成 lint、typecheck、Vitest 35/35 与 Next.js build。上次标准后端镜像 verify 为 31 项中 1 failure、0 error，CHECK 断言已修订；重启后 Docker Hub 不可达，用户改用旧测试镜像挂载当前源码运行，出现 31 项中 24 errors，报告共同根因为 Mockito/Byte Buddy 在容器中自附加 agent 失败。POM 已按 Mockito Java 21 指南配置测试 JVM 显式 agent，尚未复跑，不能宣布后端门槛通过。Compose 应用已从 Windows 浏览器实际完成单任务成功、结果预览、刷新恢复与 Bob 页面隔离；自动 smoke、三种失败和卷保留尚未验证。不要把源码存在、静态检查、设计文档或参考仓库的 CI 结果描述为本项目已运行通过。
+- 当前已有七表迁移、演示身份、只读模板、私有素材及 Java 任务 Worker/查询源码；前端已有模板列表、详情、演示用户切换、上传、任务受理缓存和历史查询页面源码。Ubuntu 虚拟机第三次 `frontend-test` 已完成 lint、typecheck、Vitest 35/35 与 Next.js build。2026-11-01 用户在 Ubuntu 用本地已有测试镜像挂载当前源码，执行完整 Maven verify，`backend-test-output/` 实测 **31 tests、0 failures、0 errors、0 skipped，BUILD SUCCESS**，包括真实 MySQL 8.4 集成测试；这是源码挂载测试通过，重新构建镜像和 GitHub CI 仍未核实。Compose 应用此前已从 Windows 浏览器完成单任务成功、结果预览、刷新恢复与 Bob 页面隔离；自动 smoke、三种失败的 HTTP 演示和卷保留尚未验证。不要把源码存在、静态检查、设计文档或参考仓库的 CI 结果描述为本项目已运行通过。
 
 ## 技术与契约
 

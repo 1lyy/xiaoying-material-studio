@@ -177,3 +177,8 @@
 
 - Docker Hub 基础镜像请求连接被拒绝；用户使用已缓存的后端测试镜像挂载当前源码运行 Maven verify。新导出报告为 31 tests、0 failures、24 errors、0 skipped。所有 errors 共享 Mockito inline Byte Buddy mock maker 无法在该容器自附加 agent 的根因；未执行到对应业务断言。
 - 按 Mockito 官方 Java 21+ 指南，在 Maven Surefire 的测试 JVM 启动参数显式加载 `mockito-core` agent，并通过 `maven-dependency-plugin:properties` 获取 JAR 路径。POM 静态 XML 检查完成；容器复测尚未执行，不能称通过。
+
+## 2026-11-01 · 后端容器测试通过
+
+- 用户用已有测试镜像挂载 Windows 共享目录中的当前 `backend/`，连接健康的 MySQL 8.4 `db-test` 执行完整 Maven verify；命令退出码 0，日志和 11 份 Surefire XML 汇总为 **31 tests、0 failures、0 errors、0 skipped，BUILD SUCCESS**，JAR 与 Spring Boot repackage 完成。
+- 这验证当前源码、Mockito agent 配置、Mapper、Flyway 与 MySQL 集成用例在该容器环境下通过。Docker Hub 不可达，尚未验证干净重建或 CI；自动 HTTP 冒烟、卷保留仍待做。
