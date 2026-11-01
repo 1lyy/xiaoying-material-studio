@@ -182,3 +182,8 @@
 
 - 用户用已有测试镜像挂载 Windows 共享目录中的当前 `backend/`，连接健康的 MySQL 8.4 `db-test` 执行完整 Maven verify；命令退出码 0，日志和 11 份 Surefire XML 汇总为 **31 tests、0 failures、0 errors、0 skipped，BUILD SUCCESS**，JAR 与 Spring Boot repackage 完成。
 - 这验证当前源码、Mockito agent 配置、Mapper、Flyway 与 MySQL 集成用例在该容器环境下通过。Docker Hub 不可达，尚未验证干净重建或 CI；自动 HTTP 冒烟、卷保留仍待做。
+
+## 2026-11-01 · 离线 HTTP 冒烟初轮通过
+
+- 专用 `smoke` 镜像因 Docker Hub 连接被拒而无法拉取。新增 `scripts/offline-smoke.sh` 复用本地前端镜像的 Node，在同一 Compose 网络运行原冒烟脚本。
+- 用户在 Ubuntu 执行 `sh scripts/offline-smoke.sh initial`，实际输出 `PASS initial: seed, cover, upload, 202, two successes, three staged failures, history, Bob 404`。数据卷正常 down/up 后的 `persist` 模式仍待运行，不能据此宣称卷保留通过。

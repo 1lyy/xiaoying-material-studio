@@ -101,3 +101,7 @@ VirtualBox 临时共享在重启后丢失，用户重新挂载项目；Docker Hu
 ### 2026-11-01 · 冒烟镜像拉取受阻
 
 用户执行 `docker compose --profile smoke run --rm smoke`，`db` 和 `backend` healthy，`frontend` running，但 Docker Hub 的 `node:22.23.4-bookworm-slim` 元数据请求连接被拒，冒烟脚本尚未执行。增加 `scripts/offline-smoke.sh`，使用已经构建的前端运行镜像中的 Node，在相同 Compose 网络及 `smoke-state` 卷执行同一 `container-smoke.mjs`；命令为 `sh scripts/offline-smoke.sh initial`，正常 down/up 后为 `sh scripts/offline-smoke.sh persist`。此离线入口尚待 Ubuntu 实测，不能称冒烟通过。
+
+### 2026-11-01 · 离线 HTTP 冒烟 initial 通过
+
+用户在 Ubuntu `/mnt/XiaoYing` 执行 `sh scripts/offline-smoke.sh initial`，截图显示冒烟容器创建并输出 `PASS initial: seed, cover, upload, 202, two successes, three staged failures, history, Bob 404`，命令返回 shell 提示符。脚本的实际断言覆盖模板种子与封面、上传、任务 202、两个成功结果、三个指定阶段失败且后续步骤 SKIPPED、Alice 历史和 Bob 对 Alice 任务/素材/结果的 404。此项 **PASS**；`persist` 模式及正常 down/up 后的数据卷保留仍 **UNVERIFIED**。这次复用了已有前端镜像，未验证干净镜像拉取或重建。
