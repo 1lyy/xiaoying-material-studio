@@ -97,3 +97,7 @@ VirtualBox 临时共享在重启后丢失，用户重新挂载项目；Docker Hu
 ### 2026-11-01 · 挂载当前源码的后端 verify 成功
 
 同一离线镜像挂载方式复跑后，终端显示 `Maven verify exit code: 0`；共享目录中新 `backend-test-output/maven-verify.log` 与 Surefire XML 均显示 **31 tests、0 failures、0 errors、0 skipped，BUILD SUCCESS**，JAR 打包及 Spring Boot repackage 完成。`db-test` 实际运行并达到 healthy，MySQL 8.4 集成用例未跳过。此项为**当前源码在已有容器镜像中的测试通过**；不代表 Docker Hub 恢复、标准 `--build` 从干净环境通过、HTTP 冒烟或卷保留通过。
+
+### 2026-11-01 · 冒烟镜像拉取受阻
+
+用户执行 `docker compose --profile smoke run --rm smoke`，`db` 和 `backend` healthy，`frontend` running，但 Docker Hub 的 `node:22.23.4-bookworm-slim` 元数据请求连接被拒，冒烟脚本尚未执行。增加 `scripts/offline-smoke.sh`，使用已经构建的前端运行镜像中的 Node，在相同 Compose 网络及 `smoke-state` 卷执行同一 `container-smoke.mjs`；命令为 `sh scripts/offline-smoke.sh initial`，正常 down/up 后为 `sh scripts/offline-smoke.sh persist`。此离线入口尚待 Ubuntu 实测，不能称冒烟通过。

@@ -155,6 +155,8 @@ docker compose --profile smoke run --rm smoke
 
 `smoke` 容器运行 [container-smoke.mjs](scripts/container-smoke.mjs)：它通过同源代理读取模板/封面，分别调用 `POST /api/session` 登录 Alice/Bob 并保存各自 Cookie；用 `demo-inputs/coast.png` 向单图模板 `c2222222-2222-4222-8222-222222222222` 上传并取得服务端 `assetId`；以该 ID 连续提交两个成功任务和 `failAtStage` 分别为三个阶段的任务，逐个检查 `202 + Location`、最终步骤序列、失败原因和授权结果 PNG；最后查询 Alice 全部历史，并断言 Bob 读取 Alice 任务、上传图和结果图均为 404。脚本成功时打印 `PASS initial...`；**该脚本尚未实际运行，不能把预期输出当成证据**。
 
+若 Docker Hub 暂时无法拉取专用 `smoke` 镜像，但应用已启动且本地已有 `frontend` 镜像，可在 Ubuntu 项目目录执行 `sh scripts/offline-smoke.sh initial`。它复用前端镜像中的 Node 运行同一冒烟脚本；正常 `docker compose down`、`docker compose up -d --wait` 后执行 `sh scripts/offline-smoke.sh persist` 检查卷保留。此离线入口尚未实测；不要将镜像拉取失败视为业务断言失败。
+
 验证正常停止后历史和图片仍在（中间的 `down` **不加** `-v`）：
 
 ~~~powershell
