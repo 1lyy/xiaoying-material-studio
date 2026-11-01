@@ -1,6 +1,6 @@
 # 素材制作站
 
-小影科技全栈开发笔试题的单仓库项目：Next.js 展示模板、上传和历史；Java 受理任务并在后台按三个阶段处理；MySQL 保存身份、素材和任务记录。2026-10-31 已在 Ubuntu 虚拟机启动 Compose，并从 Windows 浏览器实际完成 Alice 登录、单图上传、任务成功、结果预览、刷新恢复及 Bob 页面隔离。2026-11-01 后端 Maven verify 在容器内挂载当前源码运行，**31 项全部通过**，包括真实 MySQL 8.4 集成测试；离线 HTTP 冒烟 `initial` 模式通过，覆盖两个成功任务、三个指定阶段失败和 Bob 404；正常 `down`/`up` 后 `persist` 模式也通过，验证历史及图片保留。重新构建镜像仍受 Docker Hub 网络阻塞；GitHub Actions 仍待验证。接口与状态以 [API 契约](docs/api-contract.md) 为准。
+小影科技全栈开发笔试题的单仓库项目：Next.js 展示模板、上传和历史；Java 受理任务并在后台按三个阶段处理；MySQL 保存身份、素材和任务记录。2026-10-31 已在 Ubuntu 虚拟机启动 Compose，并从 Windows 浏览器实际完成 Alice 登录、单图上传、任务成功、结果预览、刷新恢复及 Bob 页面隔离。2026-11-01 Ubuntu 离线容器测试通过，GitHub Actions 在新环境对提交 `fe5ef9b` 的前后端测试、镜像构建、Compose 启动、三阶段冒烟和卷保留检查也全部通过。接口与状态以 [API 契约](docs/api-contract.md) 为准。
 
 ## 运行截图
 
@@ -16,7 +16,7 @@
 
 ## 技术版本与目录
 
-版本以 [前端包清单](frontend/package.json)、[npm 锁文件](frontend/package-lock.json)、[后端 POM](backend/pom.xml)、[Maven Wrapper 配置](backend/.mvn/wrapper/maven-wrapper.properties) 和 Dockerfile 为准。前端容器检查、后端挂载源码的容器 verify 和 Compose 页面链路已运行；标准入口的干净镜像重建仍未验证。
+版本以 [前端包清单](frontend/package.json)、[npm 锁文件](frontend/package-lock.json)、[后端 POM](backend/pom.xml)、[Maven Wrapper 配置](backend/.mvn/wrapper/maven-wrapper.properties) 和 Dockerfile 为准。前端、后端及 Compose 主流程已在 Ubuntu 容器运行；GitHub Actions 还在新 runner 上完成了标准入口的镜像构建和全链路检查。
 
 | 层 | 固定版本或来源 |
 | --- | --- |
@@ -44,7 +44,7 @@ compose.yaml        db/backend/frontend 与 test/smoke profile
 
 `frontend/` 为 Next.js；`backend/` 为 Java；`compose.yaml` 编排数据库、后端和前端。只发布前端宿主端口，Java 和 MySQL 留在 Compose 网络。数据库和素材使用命名卷。
 
-在具备 Docker Compose 的隔离环境，从项目根目录运行。Ubuntu 虚拟机已执行 `docker compose up --build -d --wait` 并能从 Windows 浏览器访问；离线 HTTP 冒烟 `initial` 模式已通过，标准 `smoke` 镜像因 Docker Hub 不可达尚未运行：
+在具备 Docker Compose 的隔离环境，从项目根目录运行。Ubuntu 虚拟机已执行 `docker compose up --build -d --wait` 并能从 Windows 浏览器访问；GitHub Actions 在新环境已执行下列标准入口及 `smoke` 服务，Ubuntu 本地因 Docker Hub 网络限制改用离线冒烟入口：
 
 ```sh
 cp .env.example .env
@@ -54,7 +54,7 @@ docker compose ps
 docker compose --profile smoke run --rm smoke
 ```
 
-推送或 PR 触发的 [GitHub Actions](.github/workflows/ci.yml) 配置了前端 lint/类型检查/Vitest/build、连接 MySQL 8.4 的 Maven verify、完整 Compose 启动、HTTP 冒烟及正常 down/up 的卷保留检查。可复现命令和结果见[容器验收记录](docs/container-acceptance.md)。Ubuntu 虚拟机中的前端检查已完成 lint/typecheck、Vitest 35/35 与 build；**后端 Maven verify 最新为 31 tests、0 failures、0 errors、0 skipped，BUILD SUCCESS**。为绕开重启后 Docker Hub 不可达，后端使用本地已有测试镜像挂载当前源码运行；这验证了当前源码与真实 MySQL 8.4，但不证明最新 Dockerfile 可从干净环境重新构建。新版应用已通过下述手工主流程，CI 仍无核实通过记录。
+推送或 PR 触发的 [GitHub Actions](.github/workflows/ci.yml) 执行前端 lint/类型检查/Vitest/build、连接 MySQL 8.4 的 Maven verify、完整 Compose 启动、HTTP 冒烟及正常 down/up 的卷保留检查。[提交 `fe5ef9b` 的运行](https://github.com/1lyy/xiaoying-material-studio/actions/runs/41286040184) 于 2026-11-01 完成，`verify` job 及全部必需步骤均为 success；日志显示前端 **35/35**、后端 `Maven verify exit code: 0`、`PASS initial` 和 `PASS persistence`。Ubuntu 虚拟机此前也独立完成前端检查、真实 MySQL 8.4 后端 **31/31** 测试和浏览器主流程。可复现命令和结果见[容器验收记录](docs/container-acceptance.md)。
 
 默认本机访问 `http://127.0.0.1:3000`。本次 Ubuntu 虚拟机将 `WEB_BIND_ADDRESS` 设为虚拟机 host-only IP `192.168.56.101`，Windows 浏览器实际访问 `http://192.168.56.101:3000`；VM 地址变化时需同步改 `.env` 的 `WEB_BIND_ADDRESS` 与 `APP_ALLOWED_ORIGINS`。Compose 只把前端 3000 映射到宿主，Java 8080 与 MySQL 3306 留在内部网络。浏览器只请求同源 `/api/**`；Next.js 服务端以**运行时** `JAVA_API_ORIGIN=http://backend:8080` 代理 Java，Java 连接 `db:3306`。代理保留方法、multipart/图片流、Cookie、`Set-Cookie`、`Location`、`Content-Type`、上游状态与取消信号，不缓存私有响应。上游地址不取自客户端。
 
@@ -72,9 +72,9 @@ docker compose --profile smoke run --rm smoke
 | `APP_ALLOWED_ORIGINS` | `http://127.0.0.1:3000,http://localhost:3000` | Java 对非 GET/HEAD/OPTIONS 请求检查的精确 Origin 白名单 |
 | `MAVEN_MIRROR` | `central` | 后端镜像构建时的 Maven 下载源；可设为 `aliyun` 使用阿里云 Central 镜像，仅影响构建/测试镜像 |
 
-容器环境中的项目检查命令：前端执行 `docker compose --profile test run --build --rm --no-deps frontend-test`（依次 lint、typecheck、Vitest、build）；后端标准入口为 `docker compose --profile test run --build --rm backend-test`（Maven verify，连接隔离的 MySQL 8.4）。第三次 Ubuntu 容器前端检查已完成全部步骤；2026-11-01 后端通过本地已有测试镜像挂载当前源码运行 `verify`，**31/31 通过、无跳过，JAR 与 Spring Boot repackage 完成**。标准入口的干净镜像重建因 Docker Hub 网络不可达仍未验证。后端测试入口把完整日志和 Surefire 报告写入被忽略的 `backend-test-output/`；见 [前端验证记录](docs/frontend-verification.md)和[后端验证记录](docs/backend-verification.md)。
+容器环境中的项目检查命令：前端执行 `docker compose --profile test run --build --rm --no-deps frontend-test`（依次 lint、typecheck、Vitest、build）；后端标准入口为 `docker compose --profile test run --build --rm backend-test`（Maven verify，连接隔离的 MySQL 8.4）。Ubuntu 前端检查和挂载当前源码的后端 **31/31** 测试已通过；GitHub Actions 对提交 `fe5ef9b` 在新 runner 上执行上述标准入口、运行镜像构建及 Compose 冒烟均通过。后端测试入口把完整日志和 Surefire 报告写入被忽略的 `backend-test-output/`；见 [前端验证记录](docs/frontend-verification.md)和[后端验证记录](docs/backend-verification.md)。
 
-后端 Dockerfile 使用 BuildKit Maven 仓库缓存、Resolver HTTP 重试和 `-U`，并将成功构建时的依赖带入测试镜像。默认仍从 Maven Central 下载；在网络持续截断的环境，可在本地 `.env` 设 `MAVEN_MIRROR=aliyun`，镜像地址为 `https://maven.aliyun.com/repository/central`。此前标准镜像测试的 1 项失败已修正；最新 31 项通过来自已有镜像挂载当前源码的容器运行，标准入口仍待重新验证。
+后端 Dockerfile 使用 BuildKit Maven 仓库缓存、Resolver HTTP 重试和 `-U`，并将成功构建时的依赖带入测试镜像。默认仍从 Maven Central 下载；在网络持续截断的环境，可在本地 `.env` 设 `MAVEN_MIRROR=aliyun`，镜像地址为 `https://maven.aliyun.com/repository/central`。Ubuntu VM 曾因 Docker Hub 网络问题无法重建；GitHub Actions 已在新 runner 上通过标准构建与测试入口。本地网络限制仍可能影响其他环境的镜像下载。
 
 ## API 契约与会话
 
@@ -179,20 +179,21 @@ Remove-Item Env:SMOKE_MODE
 | MyBatis + Flyway + MySQL 8.4 | `TaskMySqlTest`、`AssetMySqlTest`、`IdentityTemplateMySqlTest`，由 `backend-test` 提供 `TEST_DB_URL` | 同一容器 verify 中真实 MySQL 8.4 集成用例全部通过；包含修订后的 CHECK 错误码 3819/约束名及重复键 1062 断言 |
 | 前端行为与代理 | Vitest/React Testing Library：多任务、旧 version、500/503 与业务失败、轮询启停、上传替换/取消、用户隔离、键盘入口、multipart/图片代理 | Ubuntu 容器 lint/typecheck 完成，Vitest **35 passed / 35**，Next.js build 完成；本次浏览器与 Java 主流程联调成功，异常分支未手工演示 |
 | HTTP/数据卷 | `smoke` 容器脚本：成功、三种指定失败、多任务、Bob 404、正常 down/up 后历史与文件 | Ubuntu 离线入口实际显示 `PASS initial` 和正常 down/up 后的 `PASS persistence`；覆盖两个成功任务、三种指定失败、多任务、Bob 404、历史及上传/结果图片保留 |
+| GitHub Actions 干净环境 | [运行 #5](https://github.com/1lyy/xiaoying-material-studio/actions/runs/41286040184) 的 `verify` job | 提交 `fe5ef9b` 上全部必需步骤 success：Compose config、前端 35/35、后端 Maven verify exit 0、镜像构建、三服务健康、`PASS initial`、正常 down/up、`PASS persistence` |
 | 静态检查 | YAML 读取、MyBatis XML 解析/方法名对应、两张演示图 Pillow 解码 | 相关检查已执行；这不能替代 Compose、Java、MySQL 或浏览器运行 |
 
-Windows 宿主没有 Docker CLI，项目安装、构建和运行均在 Ubuntu 虚拟机的容器环境中；Windows 浏览器通过虚拟机 IP 检查页面与 API。源码已提交至公开 GitHub 仓库；推送后的 GitHub Actions 结果尚未独立核实，应以仓库的 [Actions 页面](https://github.com/1lyy/xiaoying-material-studio/actions) 为准。详细命令与旧失败保留在 [容器验收记录](docs/container-acceptance.md)、[后端记录](docs/backend-verification.md)、[前端记录](docs/frontend-verification.md)与[开发日志](docs/dev-log.md)。外部参考仓库的 CI 结果不属于本项目证据。
+Windows 宿主没有 Docker CLI，项目安装、构建和运行均在 Ubuntu 虚拟机或 GitHub Actions 的容器环境中；Windows 浏览器通过虚拟机 IP 检查页面与 API。公开仓库的 [最新已核查 CI 运行](https://github.com/1lyy/xiaoying-material-studio/actions/runs/41286040184) 对提交 `fe5ef9b` 为 success。详细命令与旧失败保留在 [容器验收记录](docs/container-acceptance.md)、[后端记录](docs/backend-verification.md)、[前端记录](docs/frontend-verification.md)与[开发日志](docs/dev-log.md)。外部参考仓库的 CI 结果不属于本项目证据。
 
 `package-lock.json` 据开发日志由宿主 npm 的 `--package-lock-only --ignore-scripts` 解析依赖元数据产生；未在 Windows 宿主安装项目依赖。Ubuntu 前端容器中 `npm ci`、lint、typecheck、Vitest 与生产构建已实际完成；运行镜像配置的 Node 版本为 22.23.4，未单独采集容器内 `node --version` 输出。
 
 ## 已有实现、未完成验证与限制
 
 - **源码已具备：**模板/分类、上传与私有读取、演示会话、Java 任务受理与三阶段 Worker、历史查询、Next.js 页面/异步状态、迁移、测试、Dockerfile/Compose/CI。源码存在不等于运行验收通过。
-- **待完成验证：**标准入口从干净镜像重新构建、Flyway 从干净卷初始化、键盘手工检查及 GitHub Actions 实际运行。前端容器检查、后端挂载当前源码的 MySQL 8.4 verify、浏览器单任务主流程及离线 HTTP 冒烟 `initial`/`persist` 模式已有上述实测。
+- **待完成验证：**真实设备上的小屏布局和完整键盘手工检查。GitHub Actions 已在新 runner 上完成标准镜像构建、MySQL/Flyway 初始化、前后端测试、HTTP 冒烟及卷保留；Ubuntu 虚拟机也完成浏览器单任务主流程和离线 HTTP 冒烟 `initial`/`persist`。生产部署未进行，亦非题目要求。
 - **范围取舍：**无真实 AI、付费/会员、模板管理后台、复杂或第三方登录；身份只供演示。单实例串行 Worker，无消息队列、多实例故障转移、任务受理幂等、断点续跑、失败自动重试或删除上传素材。POST 超时表示受理未知，先查历史再决定是否提交新任务。
 - **数据边界：**启动时遗留 `RUNNING` 变成 `FAILED/PROCESS_INTERRUPTED`，`QUEUED` 保留等待领取；**不是自动续跑**。文件系统与 MySQL 无共同事务，移动文件后崩溃或回滚可能留下孤儿文件，代码仅尽力清理。完整历史查询没有固定条数截断，但缺少分页/归档，数据量大时查询、传输和前端渲染成本会增长；过期会话清理也没有后台维护任务。
 
-**实际有效投入：待本人确认。** [开发日志](docs/dev-log.md)只有一轮约 20 分钟的会话时段估算，其他轮次未连续计时；不能把估算相加冒充实际工时。选择先冻结契约、独立实现、写可重复测试并保留 UNVERIFIED，未为追求功能复杂度引入额外基础设施。
+**实际有效投入：约 10 小时（本人于 2026-11-01 确认的累计估算，非逐分钟计时）。** 主要取舍是先冻结契约、独立实现、写可重复测试并在容器内验证；未为追求功能复杂度引入额外基础设施。
 
 ## 部署与回滚（基本步骤，未实际执行）
 
@@ -220,4 +221,4 @@ Windows 宿主没有 Docker CLI，项目安装、构建和运行均在 Ubuntu �
 
 ## 最终验收与源码交付
 
-[独立验收记录](docs/final-acceptance.md)逐条列出 R-01～R-14 的源码、测试入口、真实运行证据及未验证项。`dist/xiaoying-fullstack-submission.zip` 由 `python scripts/package-submission.py` 从明确白名单生成，脚本检查必需文件、排除目录、重复条目和 ZIP 可读性；压缩包不含 `.env`、依赖目录、构建缓存或持久化数据。仓库以发布时的 `main` HEAD 作为验收 commit，提交时应记录实际 SHA；实际工时与通过原沟通渠道提交给招聘方的动作仍需本人确认。
+[独立验收记录](docs/final-acceptance.md)逐条列出 R-01～R-14 的源码、测试入口、真实运行证据及未验证项。`dist/xiaoying-fullstack-submission.zip` 由 `python scripts/package-submission.py` 从明确白名单生成，脚本检查必需文件、排除目录、重复条目和 ZIP 可读性；压缩包不含 `.env`、依赖目录、构建缓存或持久化数据。仓库以最终发布时的 `main` HEAD 作为验收 commit；累计投入约 10 小时已由本人确认。通过原沟通渠道向招聘方发送仓库链接的动作仍由本人完成。

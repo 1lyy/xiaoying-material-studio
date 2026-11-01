@@ -81,3 +81,7 @@ docker compose --profile test run --build --rm --no-deps frontend-test npm run b
 用户在已挂载的 Windows 项目目录 `/mnt/XiaoYing` 执行 `docker compose --profile test run --build --rm --no-deps frontend-test` 并提供完整终端截图。镜像构建完成，容器中的 `npm run lint` 和 `npm run typecheck` 均完成；Vitest 报告 **10 test files passed、35 tests passed**；`npm run build` 显示 Next.js 16.4.3 编译成功、TypeScript 完成、静态页面生成和路由表输出，随后返回 shell 提示符。以该截图为证，**前端容器检查 PASS**。未取得真实浏览器页面截图或 Java 联调结果。
 
 Vitest 仍输出 `next/image` 测试 mock 向 `<img>` 透传 `fill` / `unoptimized` 的 React 警告，属于测试输出整洁度问题，未使测试失败。构建期间 Next.js 在容器内建议/添加 `.next/dev/types/**/*.ts` 到 `tsconfig.json` 的 include；此次构建镜像内的修改不能当作 Windows 源码已修改。共享目录目前是当前 VM 会话的临时 VirtualBox 共享，尚未验证重启后自动挂载。
+
+## 2026-11-01 · GitHub Actions 前端入口通过
+
+[CI run #5](https://github.com/1lyy/xiaoying-material-studio/actions/runs/41286040184) 对提交 `fe5ef9b` 的前端 `npm ci`、lint、TypeScript、Vitest 与 Next.js build 步骤为 success，日志显示 **35 passed (35)**；同一运行在新 runner 上成功构建前端运行镜像并通过 HTTP 冒烟。测试 mock 的 React 属性警告仍可见，但不影响退出码。真实小屏操作和完整键盘手工检查未单独留证据。

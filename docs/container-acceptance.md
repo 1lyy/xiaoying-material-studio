@@ -1,8 +1,12 @@
 # 容器交付与验收记录
 
-记录日期：2026-10-30。范围：干净环境的 Compose 启动、CI、真实 MySQL、HTTP 冒烟及数据卷保留。本机当前没有 Docker/Podman CLI；下文明确区分已完成的静态检查与未执行的容器验证。
+## 当前结论：GitHub Actions 干净环境通过（2026-11-01）
 
-## 交付结构与静态核查
+公开仓库提交 [`fe5ef9b`](https://github.com/1lyy/xiaoying-material-studio/commit/fe5ef9b08070051ddc17ca5de42d46b2a2e12bc6) 对应的 [CI run #5](https://github.com/1lyy/xiaoying-material-studio/actions/runs/41286040184) 已完成，`verify` job 为 **success**。从该运行的步骤记录核对：Compose config、前端 npm ci/lint/typecheck/Vitest/build、后端 Maven verify + MySQL 8.4、运行镜像构建、三服务健康启动、HTTP `PASS initial`、正常 down/up、`PASS persistence` 均为 success。日志明确显示前端 **35 passed (35)**、`Maven verify exit code: 0`、两个冒烟 PASS 标记。GitHub runner 为新环境，因此验证了标准构建入口和新卷的 Flyway 初始化；这不代表所有生产部署环境均已验证。以下 2026-10-30 初审矩阵与后续失败日志是历史记录，不能覆盖本节当前结论。
+
+初审记录日期：2026-10-30。范围：干净环境的 Compose 启动、CI、真实 MySQL、HTTP 冒烟及数据卷保留。当时 Windows 宿主没有 Docker/Podman CLI；下文保留静态检查与逐轮运行日志的历史时间点。
+
+## 初审交付结构与静态核查（历史）
 
 | 项目 | 文件证据 | 本轮结论 |
 | --- | --- | --- |

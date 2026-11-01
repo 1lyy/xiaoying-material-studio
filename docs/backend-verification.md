@@ -98,3 +98,7 @@ docker compose --profile test run --build --rm backend-test
 用户从 Ubuntu `/mnt/XiaoYing` 用本地已有 `backend-test` 镜像挂载当前 `backend/` 源码，并保留 `db-test` 依赖，执行 `docker compose --profile test run --rm --pull never -v "$PWD/backend:/workspace" -v "$PWD/backend-test-output:/workspace/test-output" backend-test`。终端显示 `Maven verify exit code: 0`；新导出的 `maven-verify.log` 为 **31 tests、0 failures、0 errors、0 skipped，BUILD SUCCESS**，Surefire XML 汇总一致。日志显示 Maven `jar` 与 `spring-boot:repackage` 完成；此前 MyBatis、CHECK 断言与 Mockito 初始化相关失败在这次测试中均未出现。
 
 本次是**当前源码挂载到旧测试镜像**并连接真实 MySQL 8.4 的容器测试通过；不是从空镜像或干净数据卷重新构建的验证。Docker Hub 当前网络连接被拒绝，标准 `--build` 入口、GitHub CI、HTTP 三种失败与数据卷重启保留仍未验证。旧失败章节保留为诊断历史，以本节为最新结果。
+
+## 2026-11-01 · GitHub Actions 标准后端入口通过
+
+[CI run #5](https://github.com/1lyy/xiaoying-material-studio/actions/runs/41286040184) 对提交 `fe5ef9b` 的 `Backend Maven verify with MySQL 8.4` 步骤为 success，日志明确显示 `Maven verify exit code: 0`；同一新 runner 完成运行镜像构建、Compose 健康启动、HTTP `PASS initial` 和 down/up 后 `PASS persistence`。这补齐了上一节因 Ubuntu 本地网络失败而未验证的标准入口；上一节的未验证结论仅描述当时环境。

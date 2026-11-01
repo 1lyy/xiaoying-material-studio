@@ -1,5 +1,30 @@
 # 独立最终验收记录
 
+## 当前验收结论（2026-11-01，提交 `fe5ef9b`）
+
+公开仓库 `main` 与本地提交 `fe5ef9b08070051ddc17ca5de42d46b2a2e12bc6` 一致。[GitHub Actions run #5](https://github.com/1lyy/xiaoying-material-studio/actions/runs/41286040184) 的 `verify` job 为 **success**：Compose config、前端 35/35 测试及构建、后端 Maven verify（exit 0）与 MySQL 8.4、运行镜像构建、三服务健康启动、HTTP `PASS initial`、正常 down/up 后 `PASS persistence` 均成功。Ubuntu 虚拟机此前另有后端 31/31 Surefire 报告、Windows 浏览器主流程截图和离线冒烟证据。下方初审矩阵及失败日志保留时间顺序，结论已被本节和后续增量取代。
+
+| 需求 | 源码与自动测试证据 | 容器/浏览器运行证据 | 当前结论 |
+| --- | --- | --- | --- |
+| R-01 技术栈与职责 | `frontend/package.json`、Next App Router、`backend/pom.xml`、MyBatis XML、Flyway；CI 前后端检查 | 新 runner 构建并启动三服务 | PASS |
+| R-02 模板列表 | V2 种子、`TemplateMapper.xml`、首页；`IdentityTemplateMySqlTest`、`page.test.tsx` | 冒烟检查种子/封面；浏览器分类切换 | PASS |
+| R-03 上传与校验 | `AssetService.upload`、`PrivateImageStorage`、`UploadSlot`；MySQL/上传行为测试 | 冒烟上传样图并取得服务端素材，浏览器预览 | PASS |
+| R-04 异步受理 | `TaskAcceptance.accept`、`TaskWorker.tick`；受控延迟下 202 的 MySQL 测试 | 冒烟断言 `202 + Location` 后查询终态 | PASS |
+| R-05 阶段与查询 | `TaskTransactions` 三阶段短事务、`TaskMapper.xml` 条件更新；步骤/GET 测试 | 冒烟检查成功步骤和结果 PNG | PASS |
+| R-06 指定失败 | `SimulationSnapshot`、`TaskPipeline`；三阶段失败中断测试 | `PASS initial` 覆盖三种指定阶段失败和 SKIPPED | PASS |
+| R-07 状态与异常 | `TaskTracker`、`history/page.tsx`；前端请求 500/503 与业务 FAILED 区分测试 | 前端 35/35；正常任务状态浏览器可见 | PASS（异常分支由自动测试验证） |
+| R-08 多任务与生命周期 | `task-cache.ts` 按 ID/version 合并、轮询启停/取消测试 | 冒烟创建两个成功任务和三个失败任务 | PASS（轮询生命周期由自动测试验证） |
+| R-09 历史与刷新 | `TaskMapper.xml.history`、`history/page.tsx`；MySQL/页面测试 | 浏览器刷新恢复；`PASS persistence` 验证 down/up 后历史和图片 | PASS |
+| R-10 身份隔离 | `SessionService`、归属过滤 Mapper、Origin 检查；Alice/Bob 测试 | 冒烟 Bob 读取 Alice 任务/素材/结果均 404 | PASS |
+| R-11 视觉与可用性 | 响应式页面、语义控件与焦点测试；桌面截图 | 桌面浏览器已操作；真实小屏和完整键盘手工检查未留证据 | UNVERIFIED（小屏手工操作） |
+| R-12 CI 与关键测试 | `.github/workflows/ci.yml`；前端 35 项、后端 31 项含真实 MySQL | [run #5](https://github.com/1lyy/xiaoying-material-studio/actions/runs/41286040184) 全部必需步骤 success | PASS |
+| R-13 交付说明 | `README.md`、锁文件/Wrapper、迁移、`.env.example`、文档；打包脚本校验 ZIP | 本人确认累计投入约 10 小时；源码包清单可读 | PASS（提交动作由本人完成） |
+| R-14 Compose | `compose.yaml`、多阶段 Dockerfile、健康检查与命名卷 | CI 新 runner 构建/启动/冒烟/down/up 保留均 success | PASS |
+
+P0 风险中的异步受理、阶段顺序/失败中断、条件领取、终态保护、归属过滤及文件路径检查由后端测试覆盖；前端多任务串扰、旧 version、请求失败误判和轮询启停由 Vitest 覆盖。HTTP 冒烟补充验证成功、三种失败、Bob 404 与卷保留。**单实例 Worker、没有受理幂等或自动续跑、孤儿文件与历史规模边界**仍按 README 限制说明；真实小屏操作和生产部署没有本次证据。已检查 Git 跟踪文件名及常见令牌模式，未发现 `.env`、依赖/构建目录或令牌命中；这不等于完整安全审计。
+
+## 历史初审与逐轮整改记录
+
 > **最新增量（2026-11-01）：** Ubuntu 容器使用已有 `backend-test` 镜像挂载当前 `backend/` 源码，连接健康的 MySQL 8.4 `db-test` 执行 `mvn verify`。导出日志和 11 份 Surefire XML 均为 **31 tests、0 failures、0 errors、0 skipped，BUILD SUCCESS**，并完成 JAR 打包。下文初审矩阵及旧失败记录保留历史时间点，不能作为当前后端测试结论。标准 `--build` 干净重建、GitHub Actions、自动 HTTP 冒烟和卷保留仍未验证。
 
 > **HTTP 冒烟增量（2026-11-01）：** Ubuntu 使用 `sh scripts/offline-smoke.sh initial` 复用已有前端镜像运行同一冒烟脚本，终端实际显示 `PASS initial: seed, cover, upload, 202, two successes, three staged failures, history, Bob 404`。下文初审矩阵中的 HTTP 未验证结论已过期；数据卷重启后的 `persist` 模式、干净镜像重建与 GitHub Actions 仍未验证。
@@ -8,7 +33,7 @@
 
 初审日期：2026-10-30；增量核查：2026-10-31。依据 `题目原文.md`、`执行计划.md` 及本目录当前源码重新核对。**PASS** 仅指所列证据实际检查通过；**UNVERIFIED** 指当前修订尚未取得必需的运行证据；**FAIL** 指已确认不满足要求。测试文件存在不等于测试通过。Windows 宿主没有 Docker，目录没有 `.git`；用户在 Ubuntu 虚拟机第三次运行前端容器检查，lint/typecheck、Vitest 35/35 和 build 已通过；后端、整站运行与 CI 仍不能标 PASS。
 
-## R-01～R-14 验收矩阵
+## 2026-10-30 初审 R-01～R-14 矩阵（历史）
 
 | 要求 | 源码证据（文件/方法） | 自动测试证据（源码；本轮执行状态） | 容器运行证据 | 结论 |
 | --- | --- | --- | --- | --- |

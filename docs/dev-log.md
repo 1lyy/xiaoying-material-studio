@@ -192,3 +192,9 @@
 
 - 用户执行 `docker compose down`、`docker compose up -d --wait` 后，三应用服务均 Healthy；`sh scripts/offline-smoke.sh persist` 实际输出 `PASS persistence: task history, uploaded file, result file retained after compose down/up; Bob remains isolated`。正常停止重启后的数据库历史、上传和结果文件以及 Bob 隔离均已通过 HTTP 验证。
 - `down` 提示 Compose 网络仍在使用，但不影响本轮结论；干净镜像重建、干净数据卷迁移及 GitHub Actions 仍待验证。
+
+## 2026-11-01 · 公开仓库 CI 全流程通过
+
+- 用户从 Ubuntu 推送本地五个提交；GitHub `main` 核查为 `fe5ef9b08070051ddc17ca5de42d46b2a2e12bc6`，与本地一致。
+- [Actions run #5](https://github.com/1lyy/xiaoying-material-studio/actions/runs/41286040184) 的 `verify` job 为 success。步骤依次通过 Compose config、前端 35/35 与构建、后端 Maven verify exit 0、运行镜像构建、新环境三服务启动、`PASS initial`、正常 down/up、`PASS persistence`。这补齐了先前因 Ubuntu Docker Hub 网络中断而未验证的标准构建与新卷初始化证据。
+- 本人确认项目开发、验证及整理累计投入约 10 小时，属于估算而非逐分钟计时。README 据此更新；实际对招聘方提交动作仍由本人完成。

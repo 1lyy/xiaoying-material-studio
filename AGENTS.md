@@ -6,7 +6,7 @@
 
 - 按 P0→P4 推进，优先满足 R-01～R-14。不要为了展示复杂度引入真实 AI、支付、消息队列、Redis、第三方登录、模板管理后台等题外业务。
 - 三个已审计的公开笔试仓库均未见明确业务源码复用许可。默认独立实现；可参考通用设计思路，不复制其源码、素材、截图或文案。任何后续复用须先核实许可，并在 README 记录来源、固定 commit 与复用范围。
-- 当前已有七表迁移、演示身份、只读模板、私有素材及 Java 任务 Worker/查询源码；前端已有模板列表、详情、演示用户切换、上传、任务受理缓存和历史查询页面源码。Ubuntu 虚拟机第三次 `frontend-test` 已完成 lint、typecheck、Vitest 35/35 与 Next.js build。2026-11-01 用户在 Ubuntu 用本地已有测试镜像挂载当前源码，执行完整 Maven verify，`backend-test-output/` 实测 **31 tests、0 failures、0 errors、0 skipped，BUILD SUCCESS**，包括真实 MySQL 8.4 集成测试；这是源码挂载测试通过，重新构建镜像和 GitHub CI 仍未核实。Compose 应用已从 Windows 浏览器完成单任务成功、结果预览、刷新恢复与 Bob 页面隔离；Ubuntu 离线 HTTP 冒烟 `initial`/`persist` 模式均已实测 `PASS`，覆盖两个成功任务、三个指定失败、Bob 404 与正常 down/up 后的历史及图片保留。不要把源码存在、静态检查、设计文档或参考仓库的 CI 结果描述为本项目已运行通过。
+- 当前已有七表迁移、演示身份、只读模板、私有素材及 Java 任务 Worker/查询源码；前端已有模板列表、详情、演示用户切换、上传、任务受理缓存和历史查询页面源码。Ubuntu 虚拟机 `frontend-test` 完成 lint、typecheck、Vitest 35/35 与 Next.js build；挂载当前源码的后端 Maven verify 为 **31 tests、0 failures、0 errors、0 skipped，BUILD SUCCESS**，包括真实 MySQL 8.4 集成测试。Compose 应用已从 Windows 浏览器完成单任务成功、结果预览、刷新恢复与 Bob 页面隔离；Ubuntu 离线 HTTP 冒烟 `initial`/`persist` 均 `PASS`。GitHub Actions [run #5](https://github.com/1lyy/xiaoying-material-studio/actions/runs/41286040184) 对提交 `fe5ef9b` 的标准镜像构建、前后端测试、三服务启动、三阶段冒烟和 down/up 卷保留全部 success。真实设备小屏布局与完整键盘手工检查尚未验证；不要把源码存在、静态检查或参考仓库的 CI 结果描述为本项目已运行通过。
 
 ## 技术与契约
 
